@@ -1,6 +1,5 @@
 package com.JobPortal.JobPortalBackend.Services;
 
-import com.JobPortal.JobPortalBackend.Model.MyUserDetails;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
 import lombok.NonNull;

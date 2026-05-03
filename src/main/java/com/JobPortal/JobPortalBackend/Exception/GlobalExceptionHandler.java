@@ -3,6 +3,9 @@ package com.JobPortal.JobPortalBackend.Exception;
 import io.jsonwebtoken.ExpiredJwtException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AuthorizationServiceException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -14,7 +17,7 @@ import java.util.Map;
 @ControllerAdvice
 public class GlobalExceptionHandler {
 
-    @ExceptionHandler(value = UserNotFoundException.class)
+    @ExceptionHandler(UserNotFoundException.class)
     public ResponseEntity<String> userNotFoundExceptionHandler(UserNotFoundException ex){
 
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
@@ -35,15 +38,26 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<String> userNotFoundExceptionHandler(UsernameNotFoundException ex){
+
+        return new ResponseEntity<>(ex.getMessage(), HttpStatus.NOT_FOUND);
+    }
+
     @ExceptionHandler(ResponseStatusException.class)
     public ResponseEntity<String> handleResponseStatusException(ResponseStatusException ex) {
         return new ResponseEntity<>(ex.getMessage(),ex.getStatusCode());
     }
 
-
-    @ExceptionHandler(ExpiredJwtException.class)
-    public ResponseEntity<String> handleExpiredJwtException(ExpiredJwtException ex) {
-        return new ResponseEntity<>("Token has expired. Please log in again.", HttpStatus.UNAUTHORIZED);
+    @ExceptionHandler(AuthenticationCredentialsNotFoundException.class)
+    public ResponseEntity<String> authenticationExceptionHandler(AuthenticationCredentialsNotFoundException ex){
+        return new ResponseEntity<>(ex.getMessage(),HttpStatus.NETWORK_AUTHENTICATION_REQUIRED);
     }
+
+    @ExceptionHandler(AuthorizationServiceException.class)
+    public ResponseEntity<String> authorizationExceptionHandler(AuthorizationServiceException ex){
+        return new ResponseEntity<>(ex.getMessage(),HttpStatus.FORBIDDEN);
+    }
+
 }
 

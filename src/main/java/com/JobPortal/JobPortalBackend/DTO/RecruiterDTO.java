@@ -1,11 +1,11 @@
 package com.JobPortal.JobPortalBackend.DTO;
 
 
+import com.JobPortal.JobPortalBackend.Model.JobPost;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import java.util.List;
-
 @Data
 @RequiredArgsConstructor
 public class RecruiterDTO {
@@ -17,6 +17,10 @@ public class RecruiterDTO {
 
     private String companyName;
 
-    private List<JobPostDTO> jobPosts;
+    private List<String> jobPosts;
 
+
+    public void setJobPosts(List<JobPost> jobPosts) {
+        this.jobPosts = jobPosts.stream().map(JobPost::getJobId).toList();
+    }
 }

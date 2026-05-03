@@ -8,7 +8,7 @@ import com.JobPortal.JobPortalBackend.Repository.UserRepo;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.access.AuthorizationServiceException;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -19,24 +19,21 @@ import org.springframework.web.server.ResponseStatusException;
 public class JobSeekerProfileService {
 
     private final JobSeekerProfileRepo jobSeekerProfileRepo;
-    private final UserRepo userRepo;
     private final ModelMapper modelMapper;
+    private final UserRepo userRepo;
 
     @Autowired
-    public JobSeekerProfileService(JobSeekerProfileRepo jobSeekerProfileRepo, UserRepo userRepo,
-                                    ModelMapper modelMapper) {
+    public JobSeekerProfileService(JobSeekerProfileRepo jobSeekerProfileRepo,
+                                   ModelMapper modelMapper, UserRepo userRepo){
         this.jobSeekerProfileRepo = jobSeekerProfileRepo;
-        this.userRepo = userRepo;
         this.modelMapper=modelMapper;
+        this.userRepo= userRepo;
 
     }
 
 
 
-    public void createProfile(String userId, JobSeekerProfile profile) {
-        Users user = userRepo.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
+    public void createProfile(Users user, JobSeekerProfile profile) {
 
         profile.setProfileId(null);
         profile.setUser(user);
@@ -47,25 +44,29 @@ public class JobSeekerProfileService {
 
 
 
-    public JobSeekerDTO getProfileByUserId(String userId) {
-        JobSeekerProfile jobSeekerProfile= jobSeekerProfileRepo.findByUserUserId(userId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
+    public JobSeekerDTO getProfileByUserId(String profileId) {
+        JobSeekerProfile jobSeekerProfile;
+
+        if(profileId ==null || profileId.isEmpty()){
+            Authentication auth= SecurityContextHolder.getContext().getAuthentication();
+            jobSeekerProfile=userRepo.findById(profileId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Profile not found")).getJobSeekerProfile();
+            return modelMapper.map(jobSeekerProfile, JobSeekerDTO.class);
+        }
+        jobSeekerProfile= jobSeekerProfileRepo.findById(profileId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
         return modelMapper.map(jobSeekerProfile, JobSeekerDTO.class);
     }
 
 
 
 
-    public JobSeekerDTO updateProfile(String userId, JobSeekerProfile updatedProfile) {
+    public JobSeekerDTO updateProfile( JobSeekerProfile updatedProfile) {
 
         Authentication auth= SecurityContextHolder.getContext().getAuthentication();
-        String loggedinUsername = auth.getName();
+        String loggedInUsername = auth.getName();
 
-        JobSeekerProfile existingProfile = jobSeekerProfileRepo.findByUserUserId(userId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Profile not found"));
+        Users loggedInUser=userRepo.findByUsername(loggedInUsername).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Profile not found"));
 
-        if(!loggedinUsername.equals(existingProfile.getUser().getUsername())){
-            throw new AuthorizationServiceException(HttpStatus.FORBIDDEN+" You are not authorized to update this profile");
-        }
-
+        JobSeekerProfile existingProfile = loggedInUser.getJobSeekerProfile();
 
         existingProfile.setFullName(updatedProfile.getFullName());
         existingProfile.setPhoneNumber(updatedProfile.getPhoneNumber());

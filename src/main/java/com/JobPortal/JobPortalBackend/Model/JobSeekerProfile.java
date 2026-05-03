@@ -32,7 +32,7 @@ public class JobSeekerProfile {
 
     private String location;
 
-    private String skills;
+    private List<String> skills;
 
     private String education;
 
@@ -41,7 +41,7 @@ public class JobSeekerProfile {
     private String resumeUrl;
 
     @OneToMany(mappedBy = "jobSeekerProfile", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<JobApplication> jobApplication;
+    private List<JobApplication> appliedJobs;
 
 
 }

@@ -1,7 +1,7 @@
-package com.JobPortal.JobPortalBackend.Model;
+package com.JobPortal.JobPortalBackend.Services;
 
+import com.JobPortal.JobPortalBackend.Model.Users;
 import org.jspecify.annotations.Nullable;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

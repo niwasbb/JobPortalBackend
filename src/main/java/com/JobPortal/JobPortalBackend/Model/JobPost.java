@@ -1,11 +1,17 @@
 package com.JobPortal.JobPortalBackend.Model;
 
+import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.validator.constraints.UniqueElements;
+
 import java.time.Instant;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -19,7 +25,7 @@ public class JobPost {
     private String jobId;
     
     @CreationTimestamp
-    private Instant postedDate;
+    private LocalDateTime postedDate;
 
     @NotBlank
     private String title;

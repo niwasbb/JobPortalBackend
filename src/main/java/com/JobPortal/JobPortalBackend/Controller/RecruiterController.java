@@ -3,6 +3,7 @@ package com.JobPortal.JobPortalBackend.Controller;
 import com.JobPortal.JobPortalBackend.DTO.RecruiterDTO;
 import com.JobPortal.JobPortalBackend.Model.RecruiterProfile;
 import com.JobPortal.JobPortalBackend.Services.RecruiterProfileService;
+import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -15,13 +16,17 @@ public class RecruiterController {
         this.recruiterProfileService=recruiterProfileService;
     }
 
-    @GetMapping("/{userId}")
-    public RecruiterDTO getRecruiterProfile(@PathVariable("userId") String userId) {
-        return recruiterProfileService.getProfileByUserId(userId);
+
+    @GetMapping()
+    public RecruiterDTO getRecruiterProfile(@RequestParam(required = false) String profileId) {
+        return recruiterProfileService.getProfileByUserId(profileId);
     }
 
-    @PutMapping("/{userId}")
-    public RecruiterDTO updatProfile(@PathVariable("userId")String userId, @RequestBody RecruiterProfile recruiterProfile){
-        return recruiterProfileService.updateProfile(userId,recruiterProfile);
+    @PutMapping()
+    public RecruiterDTO updateProfile( @Valid @RequestBody RecruiterProfile recruiterProfile){
+        return recruiterProfileService.updateProfile(recruiterProfile);
     }
+
+
+
 }

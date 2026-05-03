@@ -1,6 +1,7 @@
 package com.JobPortal.JobPortalBackend.Services;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.io.Decoders;
 import io.jsonwebtoken.security.Keys;
@@ -52,17 +53,17 @@ public class JWTService {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String extractUserName(String token) {
+    public String extractUserName(String token)throws ExpiredJwtException {
         return extractClaim(token, Claims::getSubject);
         
     }
 
-    private <T> T extractClaim(String token, Function<Claims,T> claimResolver) {
+    private <T> T extractClaim(String token, Function<Claims,T> claimResolver)throws ExpiredJwtException {
         final Claims claims=extractAllClaims(token);
         return claimResolver.apply(claims);
     }
 
-    private Claims extractAllClaims(String token) {
+    private Claims extractAllClaims(String token)throws ExpiredJwtException {
         return Jwts.parser()
                 .verifyWith(getKey())
                 .build().parseSignedClaims(token).getPayload();
@@ -70,8 +71,11 @@ public class JWTService {
     }
 
     public boolean validateToken(String token, UserDetails userDetails) {
-        final String userName= extractUserName(token);
-        return (userName.equals(userDetails.getUsername()) && !isTokenExpired(token));
+
+            final String userName = extractUserName(token);
+            return (userName.equals(userDetails.getUsername()) && !isTokenExpired(token));
+
+
     }
 
     private boolean isTokenExpired(String token) {

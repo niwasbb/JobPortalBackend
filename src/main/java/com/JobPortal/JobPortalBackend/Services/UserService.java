@@ -6,9 +6,9 @@ import com.JobPortal.JobPortalBackend.Model.RecruiterProfile;
 import com.JobPortal.JobPortalBackend.Model.UserRole;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
-import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -27,18 +27,16 @@ public class UserService {
     private final JWTService jwtService;
     private final JobSeekerProfileService jobSeekerProfileService;
     private final RecruiterProfileService recruiterProfileService;
-    private final ModelMapper modelMapper;
 
     @Autowired
     public UserService(UserRepo userRepo, AuthenticationManager authManager,
                        JWTService jwtService, JobSeekerProfileService jobSeekerProfileService,
-                        RecruiterProfileService recruiterProfileService, ModelMapper modelMapper){
+                        RecruiterProfileService recruiterProfileService){
         this.userRepo=userRepo;
         this.authManager=authManager;
         this.jwtService=jwtService;
         this.jobSeekerProfileService=jobSeekerProfileService;
         this.recruiterProfileService=recruiterProfileService;
-        this.modelMapper=modelMapper;
     }
     /******************************************************************************************************************/
 
@@ -47,32 +45,34 @@ public class UserService {
 //    new user registration
 
     public void newUser(Users user){
+
         if (userRepo.existsByUsername(user.getUsername())) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Username already exists");
         }
+
         if(user.getRole()==null || user.getRole()==UserRole.JOB_SEEKER){
+
             user.setRole(UserRole.JOB_SEEKER);
             Users newUser=userRepo.save(user);
             JobSeekerProfile jobSeekerProfile=new JobSeekerProfile();
-            jobSeekerProfileService.createProfile(newUser.getUserId(), jobSeekerProfile);
+            jobSeekerProfileService.createProfile(newUser, jobSeekerProfile);
         }
+
         else{
+
             Users newUser=userRepo.save(user);
             RecruiterProfile recruiterProfile= new RecruiterProfile();
-            recruiterProfileService.createProfile(newUser.getUserId(),recruiterProfile);
+            recruiterProfileService.createProfile(newUser,recruiterProfile);
         }
-
-
-
 
     }
 
 
 //    verifying login and generating JWT token
 
-    public String verifyUser(Users user){
-        if(!userRepo.existsByUsername(user.getUsername()))
-        {
+    public String userLogin(Users user){
+
+        if(!userRepo.existsByUsername(user.getUsername())) {
             throw new UserNotFoundException("User not found");
         }
 
@@ -84,25 +84,22 @@ public class UserService {
         return "Credentials not match";
     }
 
+
 //    Delete user by userId
 
-    public String deleteUserById(String userId) {
+    public String deleteUserById() {
         Authentication auth= SecurityContextHolder.getContext().getAuthentication();
-        String loggedinUsername = auth.getName();
-        Users user=userRepo.findById(userId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"User not found"));
+        String loggedInUsername = auth.getName();
 
-        if(!loggedinUsername.equals(user.getUsername())){
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN,"You are not authorized to delete this profile");
-        }
-        userRepo.deleteById(userId);
+        Users loggedInUser=userRepo.findByUsername(loggedInUsername).orElseThrow(()->new AuthenticationCredentialsNotFoundException("Authentication problem"));
 
-        return userId;
+        String username=loggedInUser.getUsername();
+        userRepo.deleteById(loggedInUser.getUserId());
+
+        return username;
 
     }
 
-//    Return users list
-//
-//    public List<UsersDTO> getUsersList() {
-//        return userRepo.findAll().stream().parallel().map(user->modelMapper.map(user,UsersDTO.class)).collect(Collectors.toList());
-//    }
+
+
 }

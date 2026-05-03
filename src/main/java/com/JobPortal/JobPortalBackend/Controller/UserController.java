@@ -6,12 +6,12 @@ import com.JobPortal.JobPortalBackend.Services.UserService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 
 @RestController
-@RequestMapping("/")
 public class UserController {
 
 /*********    dependencies ***************/
@@ -27,8 +27,7 @@ public class UserController {
 
 
 
-/****************************************/
-
+//****************************************//
 
     @PostMapping("/register")
     public void newUser(@Valid @RequestBody Users user){
@@ -36,20 +35,23 @@ public class UserController {
         userService.newUser(user);
     }
 
-
-
     @PostMapping("/login")
     public String userLogin(@RequestBody Users user){
-        return userService.verifyUser(user);
+        return userService.userLogin(user);
     }
 
 
-    @DeleteMapping("/user/{id}")
-    public ResponseEntity<String> deleteUser(@PathVariable("id") String userId){
-        userService.deleteUserById(userId);
+    @DeleteMapping()
+    public ResponseEntity<String> deleteUser(){
+        String username=userService.deleteUserById();
 
-        return new ResponseEntity<>("User with id "+userId+" deleted successfully", org.springframework.http.HttpStatus.OK);
+        return new ResponseEntity<>("User "+username+" deleted successfully", org.springframework.http.HttpStatus.OK);
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        SecurityContextHolder.clearContext(); //Frontend must delete token
+        return ResponseEntity.ok("Logged out");
+    }
 
 }

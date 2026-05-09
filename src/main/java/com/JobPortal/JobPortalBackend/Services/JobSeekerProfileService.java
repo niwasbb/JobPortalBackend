@@ -1,82 +1,81 @@
 package com.JobPortal.JobPortalBackend.Services;
 
-import com.JobPortal.JobPortalBackend.DTO.JobSeekerDTO;
-import com.JobPortal.JobPortalBackend.Model.JobSeekerProfile;
+import com.JobPortal.JobPortalBackend.DTO.JobSeekerRequest;
+import com.JobPortal.JobPortalBackend.DTO.JobSeekerResponse;
+import com.JobPortal.JobPortalBackend.Exception.UserNotFoundException;
+import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
-import com.JobPortal.JobPortalBackend.Repository.UserRepo;
+import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
+
+import java.util.UUID;
 
 
 @Service
 public class JobSeekerProfileService {
 
     private final JobSeekerProfileRepo jobSeekerProfileRepo;
-    private final ModelMapper modelMapper;
-    private final UserRepo userRepo;
+    @Autowired
+    private ModelMapper modelMapper;
+    private final AuthenticationService authenticationService;
 
     @Autowired
-    public JobSeekerProfileService(JobSeekerProfileRepo jobSeekerProfileRepo,
-                                   ModelMapper modelMapper, UserRepo userRepo){
+    public JobSeekerProfileService(JobSeekerProfileRepo jobSeekerProfileRepo, AuthenticationService authenticationService) {
         this.jobSeekerProfileRepo = jobSeekerProfileRepo;
-        this.modelMapper=modelMapper;
-        this.userRepo= userRepo;
+        this.authenticationService=authenticationService;
 
     }
 
 
 
-    public void createProfile(Users user, JobSeekerProfile profile) {
+    public void createProfile(Users user, JobSeeker profile) {
 
         profile.setProfileId(null);
         profile.setUser(user);
-        profile.setEmail(user.getEmail());
-        user.setJobSeekerProfile(profile);
+        profile.setEmailId(user.getEmailId());
+        user.setJobSeeker(profile);
         jobSeekerProfileRepo.save(profile);
     }
 
 
+    public JobSeekerResponse getMyProfile() {
 
-    public JobSeekerDTO getProfileByUserId(String profileId) {
-        JobSeekerProfile jobSeekerProfile;
+        Users user=authenticationService.getLoggedInUser();
+        JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(() -> new UserNotFoundException( "Profile not found"));
 
-        if(profileId ==null || profileId.isEmpty()){
-            Authentication auth= SecurityContextHolder.getContext().getAuthentication();
-            jobSeekerProfile=userRepo.findById(profileId).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Profile not found")).getJobSeekerProfile();
-            return modelMapper.map(jobSeekerProfile, JobSeekerDTO.class);
-        }
-        jobSeekerProfile= jobSeekerProfileRepo.findById(profileId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Profile not found"));
-        return modelMapper.map(jobSeekerProfile, JobSeekerDTO.class);
+        return modelMapper.map(jobSeeker, JobSeekerResponse.class);
+
+    }
+
+    public JobSeekerResponse getProfileById(UUID profileId) {
+
+        JobSeeker jobSeeker = jobSeekerProfileRepo.findById(profileId).orElseThrow(() -> new UserNotFoundException( "Profile not found"));
+
+        return modelMapper.map(jobSeeker, JobSeekerResponse.class);
     }
 
 
 
 
-    public JobSeekerDTO updateProfile( JobSeekerProfile updatedProfile) {
+    public JobSeekerResponse updateProfile(JobSeekerRequest updatedProfile) {
 
-        Authentication auth= SecurityContextHolder.getContext().getAuthentication();
-        String loggedInUsername = auth.getName();
+        Users loggedInUser=authenticationService.getLoggedInUser();
 
-        Users loggedInUser=userRepo.findByUsername(loggedInUsername).orElseThrow(()->new ResponseStatusException(HttpStatus.NOT_FOUND,"Profile not found"));
+        JobSeeker existingProfile = jobSeekerProfileRepo.findByUserUserId(loggedInUser.getUserId()).orElseThrow(() -> new UserNotFoundException( "Profile not found"));
 
-        JobSeekerProfile existingProfile = loggedInUser.getJobSeekerProfile();
-
-        existingProfile.setFullName(updatedProfile.getFullName());
+        existingProfile.setFirstName(updatedProfile.getFirstName());
+        existingProfile.setLastName(updatedProfile.getLastName());
         existingProfile.setPhoneNumber(updatedProfile.getPhoneNumber());
         existingProfile.setLocation(updatedProfile.getLocation());
         existingProfile.setSkills(updatedProfile.getSkills());
         existingProfile.setEducation(updatedProfile.getEducation());
         existingProfile.setExperience(updatedProfile.getExperience());
-        existingProfile.setResumeUrl(updatedProfile.getResumeUrl());
         existingProfile=jobSeekerProfileRepo.save(existingProfile);
-        return modelMapper.map(existingProfile, JobSeekerDTO.class);
+
+        return modelMapper.map(existingProfile, JobSeekerResponse.class);
     }
 
 

@@ -1,41 +1,28 @@
-package com.JobPortal.JobPortalBackend.Model;
+package com.JobPortal.JobPortalBackend.DTO;
 
-
-import jakarta.persistence.*;
+import com.JobPortal.JobPortalBackend.Model.UserRole;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import java.util.UUID;
-
-@Entity
 @Data
 @RequiredArgsConstructor
-public class Users {
-    @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private UUID userId;
+public class UserRequest {
 
     @NotBlank(message = "Username should be at least 5 characters long")
-    @Column(nullable = false, unique = true)
+    @Size(min = 5, message = "Username should be at least 5 characters long")
     private String username;
 
     @Email(message = "Enter valid email")
     @NotBlank(message = "Enter valid email")
-    @Column(nullable = false, unique = true)
     private String emailId;
 
     @Pattern(regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&]).{8,}$", message = "Password should be 8 characters long, should have minimum 1 small letter (a-z), 1 capital letter (A-Z), 1 special character @$!%*?& , 1 digit (0-9).")
     private String password;
 
-    @Enumerated(EnumType.STRING)
+
     private UserRole role;
-
-    @OneToOne( mappedBy = "user",  cascade = CascadeType.ALL,orphanRemoval = true)
-    private JobSeeker jobSeeker;
-
-    @OneToOne(mappedBy = "user",  cascade = CascadeType.ALL,orphanRemoval = true)
-    private Recruiter recruiter;
 }

@@ -9,6 +9,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 
 @RestController
 @RequestMapping("/applications")
@@ -24,7 +26,7 @@ public class ApplicationsController {
 
 
 
-    @GetMapping("")
+    @GetMapping("/my_applications")
     public Page<ApplicationDTO> getMyApplications(@RequestParam(required = false, defaultValue = "1") int pageNo,
                                                  @RequestParam(required = false, defaultValue = "10") int pageSize)
     {
@@ -34,7 +36,7 @@ public class ApplicationsController {
 
 
     @GetMapping("/{jobId}")
-    public Page<ApplicationDTO> getApplicantsList(@PathVariable("jobId") String jobId,
+    public Page<ApplicationDTO> getApplicantsList(@PathVariable("jobId") UUID jobId,
                                                   @RequestParam(required = false, defaultValue = "1") int pageNo,
                                                   @RequestParam(required = false, defaultValue = "10") int pageSize)
     {
@@ -43,13 +45,25 @@ public class ApplicationsController {
     }
 
     @PostMapping("/{jobPostId}/apply")
-    public ResponseEntity<String> applyForJob(@PathVariable String jobPostId){
+    public ResponseEntity<String> applyForJob(@PathVariable UUID jobPostId){
         return applicationService.applyForJob(jobPostId);
     }
 
-    @DeleteMapping("/{applicationId}")
-    public ResponseEntity<String> deleteApplication(@PathVariable String applicationId){
-        return applicationService.deleteApplication(applicationId);
+    @PutMapping("/cancel/{applicationId}")
+    public ResponseEntity<String> cancelApplication(@PathVariable UUID applicationId){
+        return applicationService.cancelApplication(applicationId);
+    }
+
+    @PutMapping("/shortlisApplication/{applicationId}")
+    public ResponseEntity<?> shortlistApplication(@PathVariable UUID applicationId){
+        return applicationService.shortlistApplication(applicationId);
+
+    }
+
+    @PutMapping("/rejectApplication/{applicationId}")
+    public ResponseEntity<?> rejectApplication(@PathVariable UUID applicationId){
+        return applicationService.rejectApplication(applicationId);
+
     }
 
 }

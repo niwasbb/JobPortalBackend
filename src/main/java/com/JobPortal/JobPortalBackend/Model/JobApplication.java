@@ -1,12 +1,11 @@
 package com.JobPortal.JobPortalBackend.Model;
 
-import com.JobPortal.JobPortalBackend.DTO.JobPostDTO;
-import com.JobPortal.JobPortalBackend.DTO.JobSeekerDTO;
 import jakarta.persistence.*;
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
-import org.modelmapper.ModelMapper;
+
+import java.util.UUID;
+
 
 @Data
 @Entity
@@ -15,17 +14,19 @@ public class JobApplication {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String applicationId;
+    private UUID applicationId;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "job_id", nullable = false)
+    @JoinColumn(name = "Job_Post_id", nullable = false)
     private JobPost jobPost;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Applicant_id", nullable = false)
-    private JobSeekerProfile jobSeekerProfile;
+    private JobSeeker jobSeeker;
 
     @Enumerated(EnumType.STRING)
     private  ApplicationStatus status;
+
+    private String resume;
 
 }

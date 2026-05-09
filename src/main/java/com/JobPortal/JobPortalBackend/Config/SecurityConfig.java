@@ -1,6 +1,8 @@
 package com.JobPortal.JobPortalBackend.Config;
 
-import com.JobPortal.JobPortalBackend.SecurityFilter.JWTFilter;
+import com.JobPortal.JobPortalBackend.SecurityLayer.CustomAccessDeniedHandler;
+import com.JobPortal.JobPortalBackend.SecurityLayer.JWTFilter;
+import com.JobPortal.JobPortalBackend.SecurityLayer.JwtAuthenticationEntryPoint;
 import com.JobPortal.JobPortalBackend.Services.MyUserDetailsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -9,7 +11,6 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
@@ -19,7 +20,6 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.bind.annotation.GetMapping;
 
 @Configuration
 @EnableWebSecurity
@@ -40,25 +40,27 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity httpSec){
 
-        return httpSec.authorizeHttpRequests(
-                auth->auth.requestMatchers("/login","/register").permitAll()
-                        .requestMatchers("/recruiter/**").hasRole("RECRUITER")
-                        .requestMatchers("/jobseeker/**").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.GET,"/applications").hasRole("JOB_SEEKER")
+        return httpSec.csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(auth->auth.requestMatchers("/swagger-ui.html","/swagger-ui/**","/v3/api-docs/**",
+                                                                                                            "/resume/{resumeFileName}","/login","/register").permitAll()
+                        .requestMatchers(HttpMethod.PUT,"/recruiter").hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.PUT,"/jobseeker").hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.GET,"/applications/my_applications").hasRole("JOB_SEEKER")
                         .requestMatchers(HttpMethod.GET,"/applications/{jobId}").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.POST,"/applications/{jobPostId}/apply").hasRole("JOB_SEEKER")
                         .requestMatchers(HttpMethod.DELETE,"/applications/{applicationId}").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.GET,"/jobs").hasRole("JOB_SEEKER")
                         .requestMatchers(HttpMethod.POST,"/jobs").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.PUT ,"/jobs/{jobPostId}").hasRole("RECRUITER")
                         .requestMatchers(HttpMethod.DELETE ,"/jobs/{jobPostId}").hasRole("RECRUITER")
-                        .anyRequest().authenticated())
-                        .httpBasic(Customizer.withDefaults())
-                        .csrf(AbstractHttpConfigurer::disable)
-                        .sessionManagement(session-> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                        .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-                        .build();
-    }
+                        .requestMatchers(HttpMethod.POST,"/resume").hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.DELETE,"/resume").hasRole("JOB_SEEKER")
+                        .anyRequest().authenticated()
+                ).exceptionHandling(customizer->customizer.accessDeniedHandler(new CustomAccessDeniedHandler())
+                                                                                                .authenticationEntryPoint(new JwtAuthenticationEntryPoint()))
+                .sessionManagement(session-> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .build();
+}
 
     @Bean
     public AuthenticationProvider authenticationProvider(){

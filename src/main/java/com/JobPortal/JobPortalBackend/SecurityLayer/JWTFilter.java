@@ -1,8 +1,7 @@
-package com.JobPortal.JobPortalBackend.SecurityFilter;
+package com.JobPortal.JobPortalBackend.SecurityLayer;
 
 import com.JobPortal.JobPortalBackend.Services.JWTService;
 import com.JobPortal.JobPortalBackend.Services.MyUserDetailsService;
-import io.jsonwebtoken.ExpiredJwtException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,6 +22,7 @@ public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTService jwtService;
     private final ApplicationContext context;
+
     @Autowired
     public JWTFilter(JWTService jwtService,ApplicationContext context){
         this.jwtService=jwtService;
@@ -32,22 +32,30 @@ public class JWTFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException{
+
         String authHeader= request.getHeader("Authorization");
         String token=null;
         String username = null;
 
         if(authHeader!=null && authHeader.startsWith("Bearer ")){
             token=authHeader.substring(7);
+
             try {
-                username=jwtService.extractUserName(token);
-            }catch (ExpiredJwtException e){
+            username=jwtService.extractUserName(token);
+
+                // existing JWT logic
+            } catch (Exception e) {
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
                 response.setContentType("application/json");
-                response.setStatus(401);
-                response.getOutputStream().println("{ \"error\": \"" + e.getMessage() + "\" }");
+
+                response.getWriter().write("""
+                                                {
+                                                  "status": 401,
+                                                  "message": "Invalid JWT token"
+                                                }
+                                                """);
                 return;
             }
-
-
         }
 
         if(username!=null && SecurityContextHolder.getContext().getAuthentication()==null){

@@ -3,28 +3,32 @@ package com.JobPortal.JobPortalBackend.Model;
 import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import lombok.*;
+import lombok.Data;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.NumberFormat;
 
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Data
 @RequiredArgsConstructor
-public class JobSeekerProfile {
+public class JobSeeker {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.UUID)
-    private String profileId;
+    private UUID profileId;
 
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false, unique = true)
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "User_id", nullable = false, unique = true)
     private Users user;
 
-    private String fullName;
+    private String firstName;
+
+    private String lastName;
 
     @Email
-    private String email;
+    private String emailId;
 
     @Nullable
     @NumberFormat
@@ -38,10 +42,9 @@ public class JobSeekerProfile {
 
     private String experience;
 
-    private String resumeUrl;
+    private String resume;
 
-    @OneToMany(mappedBy = "jobSeekerProfile", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "jobSeeker", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JobApplication> appliedJobs;
-
 
 }

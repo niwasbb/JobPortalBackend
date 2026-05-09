@@ -1,42 +1,49 @@
 package com.JobPortal.JobPortalBackend.Services;
 
-import com.JobPortal.JobPortalBackend.DTO.JobPostDTO;
+import com.JobPortal.JobPortalBackend.DTO.JobPostRequest;
+import com.JobPortal.JobPortalBackend.DTO.JobPostResponse;
 import com.JobPortal.JobPortalBackend.Exception.JobPostNotFound;
-import com.JobPortal.JobPortalBackend.Model.*;
+import com.JobPortal.JobPortalBackend.Exception.UserNotFoundException;
+import com.JobPortal.JobPortalBackend.Model.JobPost;
+import com.JobPortal.JobPortalBackend.Model.Recruiter;
+import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobPostRepo;
-import com.JobPortal.JobPortalBackend.Repository.UserRepo;
-import jakarta.validation.Valid;
+import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
+import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AuthorizationServiceException;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
+import java.util.UUID;
 
 @Service
 public class JobPostService {
 
     private final JobPostRepo jobPostRepo;
     private final ModelMapper modelMapper;
-    private final UserRepo  userRepo;
+    private final AuthenticationService authenticationService;
+    private final RecruiterProfileRepo recruiterProfileRepo;
 
 
     @Autowired
-    public JobPostService(JobPostRepo jobPostRepo, ModelMapper modelMapper, UserRepo userRepo) {
+    public JobPostService(JobPostRepo jobPostRepo, ModelMapper modelMapper,
+                          AuthenticationService authenticationService,RecruiterProfileRepo recruiterProfileRepo) {
 
         this.jobPostRepo=jobPostRepo;
         this.modelMapper=modelMapper;
-        this.userRepo=userRepo;
+        this.authenticationService=authenticationService;
+        this.recruiterProfileRepo=recruiterProfileRepo;
     }
 
 
 
-    public Page<JobPostDTO> getJobs(String searchBy, Pageable pageable){
+    public Page<JobPostResponse> getJobs(String searchBy, Pageable pageable){
         Page<JobPost> jobPostPage;
 
         if(searchBy ==null|| searchBy.isEmpty()){
@@ -46,10 +53,10 @@ public class JobPostService {
             jobPostPage = jobPostRepo.findAll(searchBy,pageable);
 
         return jobPostPage.map(jobPost ->
-            new JobPostDTO(jobPost.getJobId(),
+            new JobPostResponse(jobPost.getJobId(),
                     jobPost.getTitle(),
                     jobPost.getPostedDate(),
-                    jobPost.getRecruiterProfile().getCompanyName(),
+                    jobPost.getRecruiter().getCompanyName(),
                     jobPost.getLocation(),
                     jobPost.getJobDescription(),
                     jobPost.getRequiredSkills(),
@@ -59,56 +66,53 @@ public class JobPostService {
         );
     }
 
-    public Users getLoggedinUser() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        String loggedInUsername = auth.getName();
 
-        return userRepo.findByUsername(loggedInUsername).orElseThrow(() -> new AuthenticationCredentialsNotFoundException("Authentication problem"));
 
-    }
+    public JobPostResponse postNewJob(JobPostRequest newJobPost) {
 
-//    public JobPostDTO getJobPostById(String jobId) {
-//
-//        JobPost jobPost= jobPostRepo.findById(jobId).orElseThrow(()-> new JobPostNotFound("Job Post not found with id: "+ jobId));
-//        return modelMapper.map(jobPost,JobPostDTO.class);
-//
-//    }
-
-    public JobPostDTO postNewJob(JobPostDTO newJobPost) {
-
-        Users user= this.getLoggedinUser();
+        Users user= authenticationService.getLoggedInUser();
+        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Recruiter Profile not found for user "+user.getUsername()));
 
         JobPost jobPost=modelMapper.map(newJobPost,JobPost.class);
-        jobPost.setRecruiterProfile(user.getRecruiterProfile());
+        jobPost.setRecruiter(recruiter);
 
         JobPost savedJobPost= jobPostRepo.save(jobPost);
-        return modelMapper.map(savedJobPost,JobPostDTO.class);
+        return modelMapper.map(savedJobPost, JobPostResponse.class);
+    }
+
+    public JobPostResponse getJobPostById(UUID jobPostId){
+
+        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found "+jobPostId));
+
+        return modelMapper.map(jobPost, JobPostResponse.class);
     }
 
 
-    public ResponseEntity<String> deleteJobPost(String jobPostId) {
+    public ResponseEntity<String> deleteJobPost(UUID jobPostId) {
 
-        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found with" ));
+        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found with"));
+        Users user= authenticationService.getLoggedInUser();
+        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Profile not found "+user.getUsername()));
+        List<JobPost> jobPosts=jobPostRepo.findAllByRecruiter_ProfileId(recruiter.getProfileId());
 
-        Users user= this.getLoggedinUser();
+        if(jobPosts.stream().noneMatch(jobPost1 -> jobPost1.equals(jobPost))){
 
-        if(!user.getRecruiterProfile().getProfileId().equals(jobPost.getRecruiterProfile().getProfileId())){
-
-            throw new AuthorizationServiceException(HttpStatus.UNAUTHORIZED+" You are not Authorized to delete this post");
+            throw new AccessDeniedException(" Job is not posted by you");
         }
         jobPostRepo.deleteById(jobPostId);
 
         return new ResponseEntity<>("Job Post deleted successfully", HttpStatus.OK);
     }
 
-
-    public JobPostDTO updateJobPost(String jobPostId, @Valid JobPostDTO updatedJobPost) {
+    public JobPostResponse updateJobPost(UUID jobPostId, JobPostRequest updatedJobPost) {
         JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found"));
-        Users user= this.getLoggedinUser();
+        Users user= authenticationService.getLoggedInUser();
+        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Profile not found "+user.getUsername()));
+        List<JobPost> jobPosts=jobPostRepo.findAllByRecruiter_ProfileId(recruiter.getProfileId());
 
-        if(!user.getRecruiterProfile().getProfileId().equals(jobPost.getRecruiterProfile().getProfileId())){
+        if(jobPosts.stream().noneMatch(jobPost1 -> jobPost1.equals(jobPost))){
 
-            throw new AuthorizationServiceException(HttpStatus.UNAUTHORIZED+" You are not Authorized to update this post");
+            throw new AccessDeniedException(" Job is not posted by you");
         }
         jobPost.setJobDescription(updatedJobPost.getJobDescription());
         jobPost.setTitle(updatedJobPost.getTitle());
@@ -121,6 +125,6 @@ public class JobPostService {
 
         jobPostRepo.save(jobPost);
 
-        return modelMapper.map(jobPost,JobPostDTO.class);
+        return modelMapper.map(jobPost, JobPostResponse.class);
     }
 }

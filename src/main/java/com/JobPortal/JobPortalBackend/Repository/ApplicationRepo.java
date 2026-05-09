@@ -4,14 +4,20 @@ import com.JobPortal.JobPortalBackend.Model.JobApplication;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.UUID;
+
 @Repository
-public interface ApplicationRepo extends JpaRepository<JobApplication, String> {
+public interface ApplicationRepo extends JpaRepository<JobApplication, UUID> {
 
-    @Query("SELECT ja FROM JobApplication ja WHERE ja.jobPost.jobId = :jobId")
-    Page<JobApplication> findAllByJobId(String jobId, Pageable pageable);
+    Page<JobApplication> findAllByJobPostJobId(UUID jobId, Pageable pageable);
 
-    Page<JobApplication> findAllByJobSeekerProfile_ProfileId(String profileId, Pageable pageable);
+    Page<JobApplication> findAllByJobSeeker_ProfileId(UUID profileId, Pageable pageable);
+
+    List<JobApplication> findAllByJobSeeker_ProfileId(UUID profileId);
+
 }
+
+

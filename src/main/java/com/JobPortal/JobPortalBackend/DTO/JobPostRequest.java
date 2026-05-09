@@ -1,27 +1,33 @@
 package com.JobPortal.JobPortalBackend.DTO;
 
+import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
-import java.time.Instant;
-import java.time.LocalDateTime;
-
 @Data
 @RequiredArgsConstructor
 @AllArgsConstructor
-public class JobPostDTO {
+public class JobPostRequest {
 
-
-    private String jobId;
+    @NotBlank
     private String title;
-    private LocalDateTime postedDate;
-    private String companyName;
-    private String location;
-    private String jobDescription;
-    private String requiredSkills;
-    private String requiredEducation;
-    private int noOfVacancy;
-    private String salaryRange;
 
+    @NotBlank
+    private String companyName;
+
+    @NotBlank
+    private String location;
+
+    private String jobDescription;
+
+    @NotBlank
+    private String requiredSkills;
+
+    @NotBlank
+    private String requiredEducation;
+
+    private int noOfVacancy;
+
+    private String salaryRange;
 }

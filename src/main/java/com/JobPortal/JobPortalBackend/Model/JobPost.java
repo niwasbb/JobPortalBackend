@@ -1,18 +1,14 @@
 package com.JobPortal.JobPortalBackend.Model;
 
-import jakarta.annotation.Nullable;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Null;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.validator.constraints.UniqueElements;
 
-import java.time.Instant;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 
 @Entity
@@ -22,7 +18,7 @@ public class JobPost {
 
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
-    private String jobId;
+    private UUID jobId;
     
     @CreationTimestamp
     private LocalDateTime postedDate;
@@ -49,8 +45,8 @@ public class JobPost {
     private String salaryRange;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "recruiter_id",nullable = false)
-    private RecruiterProfile recruiterProfile;
+    @JoinColumn(name = "Recruiter_id",nullable = false)
+    private Recruiter recruiter;
 
     @OneToMany(mappedBy = "jobPost", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<JobApplication> jobApplications;

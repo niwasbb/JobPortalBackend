@@ -1,6 +1,7 @@
 package com.JobPortal.JobPortalBackend.Controller;
 
-import com.JobPortal.JobPortalBackend.DTO.JobPostDTO;
+import com.JobPortal.JobPortalBackend.DTO.JobPostRequest;
+import com.JobPortal.JobPortalBackend.DTO.JobPostResponse;
 import com.JobPortal.JobPortalBackend.Services.JobPostService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,8 +10,9 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/jobs")
@@ -25,11 +27,11 @@ public class JobPostController {
 
 
     @GetMapping()
-    public Page<JobPostDTO> getJobs(@RequestParam(required = false) String searchBy,
-                                    @RequestParam(required = false, defaultValue = "1") int pageNo,
-                                    @RequestParam(required = false, defaultValue = "10") int pageSize,
-                                    @RequestParam(required = false, defaultValue = "postedDate") String sortBy,
-                                    @RequestParam(required = false, defaultValue = "DESC") String sortDir)
+    public Page<JobPostResponse> getJobs(@RequestParam(required = false) String searchBy,
+                                         @RequestParam(required = false, defaultValue = "1") int pageNo,
+                                         @RequestParam(required = false, defaultValue = "10") int pageSize,
+                                         @RequestParam(required = false, defaultValue = "postedDate") String sortBy,
+                                         @RequestParam(required = false, defaultValue = "DESC") String sortDir)
     {
 
         Sort sort;
@@ -46,19 +48,24 @@ public class JobPostController {
 
     }
 
+    @GetMapping("/{jobPostId}")
+    public JobPostResponse getJobPostById(@PathVariable UUID jobPostId){
+        return jobPostService.getJobPostById(jobPostId);
+    }
+
     @PostMapping()
-    public JobPostDTO postNewJob(@Valid @RequestBody JobPostDTO newNobPost){
+    public JobPostResponse postNewJob(@Valid @RequestBody JobPostRequest newNobPost){
 
         return jobPostService.postNewJob(newNobPost);
     }
 
     @PutMapping("/{jobPostId}")
-    public JobPostDTO updateJobPost(@PathVariable String jobPostId,@Valid @RequestBody JobPostDTO updatedJobPost){
+    public JobPostResponse updateJobPost(@PathVariable UUID jobPostId, @Valid @RequestBody JobPostRequest updatedJobPost){
         return jobPostService.updateJobPost(jobPostId,updatedJobPost);
     }
 
     @DeleteMapping("/{jobPostId}")
-    public ResponseEntity<String> deleteJobPost(@PathVariable String jobPostId){
+    public ResponseEntity<String> deleteJobPost(@PathVariable UUID jobPostId){
         return jobPostService.deleteJobPost(jobPostId);
     }
 

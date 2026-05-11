@@ -18,6 +18,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.UUID;
@@ -31,16 +32,18 @@ public class ApplicationService {
     private final AuthenticationService authenticationService;
     private final RecruiterProfileRepo recruiterProfileRepo;
     private final JobSeekerProfileRepo jobSeekerProfileRepo;
+    private final EmailService emailService;
 
     @Autowired
     public ApplicationService( JobPostRepo jobPostRepo, ApplicationRepo applicationRepo,
                                 AuthenticationService authenticationService,RecruiterProfileRepo recruiterProfileRepo,
-                               JobSeekerProfileRepo jobSeekerProfileRepo) {
+                               JobSeekerProfileRepo jobSeekerProfileRepo,EmailService emailService) {
         this.jobPostRepo = jobPostRepo;
         this.applicationRepo = applicationRepo;
         this.authenticationService=authenticationService;
         this.recruiterProfileRepo=recruiterProfileRepo;
         this.jobSeekerProfileRepo=jobSeekerProfileRepo;
+        this.emailService=emailService;
     }
 
 
@@ -140,11 +143,16 @@ public class ApplicationService {
         );
     }
 
+    @Transactional
     public ResponseEntity<?> shortlistApplication(UUID applicationId) {
 
         JobApplication jobApplication=applicationRepo.findById(applicationId).orElseThrow(()-> new ApplicationNotFoundException("Application not found"));
         jobApplication.setStatus(ApplicationStatus.SHORTLISTED);
         applicationRepo.save(jobApplication);
+        JobSeeker jobSeeker=jobApplication.getJobSeeker();
+        String emailId=jobSeeker.getEmailId();
+        String emailBody="Dear applicant,\n\tCongratulations, your application is shortlisted";
+        emailService.sendEmail(emailId,"Your application is shortlisted",emailBody);
 
         return new ResponseEntity<>("Shortlisted",HttpStatus.OK);
     }
@@ -154,6 +162,10 @@ public class ApplicationService {
         JobApplication jobApplication=applicationRepo.findById(applicationId).orElseThrow(()-> new ApplicationNotFoundException("Application not found"));
         jobApplication.setStatus(ApplicationStatus.REJECTED);
         applicationRepo.save(jobApplication);
+        JobSeeker jobSeeker=jobApplication.getJobSeeker();
+        String emailId=jobSeeker.getEmailId();
+        String emailBody="Dear applicant,\n\tSorry, your application is rejected";
+        emailService.sendEmail(emailId,"Your application is rejected",emailBody);
 
         return new ResponseEntity<>("Rejected",HttpStatus.OK);
     }

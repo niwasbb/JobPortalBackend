@@ -54,13 +54,13 @@ public class ApplicationsController {
         return applicationService.cancelApplication(applicationId);
     }
 
-    @PutMapping("/shortlisApplication/{applicationId}")
+    @PutMapping("/shortlist/{applicationId}")
     public ResponseEntity<?> shortlistApplication(@PathVariable UUID applicationId){
         return applicationService.shortlistApplication(applicationId);
 
     }
 
-    @PutMapping("/rejectApplication/{applicationId}")
+    @PutMapping("/reject/{applicationId}")
     public ResponseEntity<?> rejectApplication(@PathVariable UUID applicationId){
         return applicationService.rejectApplication(applicationId);
 

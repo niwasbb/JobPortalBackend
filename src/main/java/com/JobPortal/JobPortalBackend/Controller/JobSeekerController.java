@@ -21,7 +21,6 @@ public class JobSeekerController {
         this.jobSeekerProfileService = jobSeekerProfileService;
     }
 
-
     @GetMapping()
     public JobSeekerResponse getMyProfile(){
         return jobSeekerProfileService.getMyProfile();

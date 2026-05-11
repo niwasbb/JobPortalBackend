@@ -43,6 +43,7 @@ public class ResumeService {
         this.jobSeekerProfileRepo = jobSeekerProfileRepo;
     }
 
+
     public String uploadResume(MultipartFile file) {
         Users users = authenticationService.getLoggedInUser();
         System.out.println(file.getOriginalFilename());
@@ -113,6 +114,7 @@ public class ResumeService {
         Users user=authenticationService.getLoggedInUser();
         JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()->new RuntimeException("Job seeker profile not found"));
         String fileName= jobSeeker.getResume();
+
         DeleteObjectRequest deleteObjectRequest=DeleteObjectRequest.builder()
                 .bucket(bucketName)
                 .key(fileName)
@@ -122,6 +124,7 @@ public class ResumeService {
 
         jobSeeker.setResume(null);
         jobSeekerProfileRepo.save(jobSeeker);
+
         return "Resume deleted successfully";
     }
 }

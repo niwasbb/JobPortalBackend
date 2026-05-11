@@ -9,7 +9,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
-import java.util.*;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Function;
 
 @Service
@@ -27,7 +30,7 @@ public class JWTService {
                     .add(claims)
                     .subject(username)
                     .issuedAt(new Date(System.currentTimeMillis()))
-                    .expiration(new Date(System.currentTimeMillis()+(1000*60*15)))
+                    .expiration(new Date(System.currentTimeMillis()+(1000*60*60)))
                     .and()
                     .signWith(getKey())
                     .compact();

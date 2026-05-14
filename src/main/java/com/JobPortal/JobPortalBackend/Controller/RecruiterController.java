@@ -32,6 +32,7 @@ public class RecruiterController {
 
     @PutMapping()
     public RecruiterResponse updateProfile(@Valid @RequestBody RecruiterRequest recruiterProfile){
+
         return recruiterProfileService.updateProfile(recruiterProfile);
     }
 

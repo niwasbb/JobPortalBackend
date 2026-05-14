@@ -13,13 +13,13 @@ import com.JobPortal.JobPortalBackend.Repository.UserRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationCredentialsNotFoundException;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class UserService {
@@ -33,8 +33,8 @@ public class UserService {
     private final JobSeekerProfileService jobSeekerProfileService;
     private final RecruiterProfileService recruiterProfileService;
     private final AuthenticationService authenticationService;
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper=new ModelMapper();
+    private final BCryptPasswordEncoder encoder=new BCryptPasswordEncoder(12);
 
     @Autowired
     public UserService(UserRepo userRepo, AuthenticationManager authManager,
@@ -60,17 +60,17 @@ public class UserService {
 
     }
 
-
-    public ResponseEntity<String> newUser(UserRequest user){
-
+    @Transactional
+    public String newUser(UserRequest user){
+        user.setPassword(encoder.encode( user.getPassword()));
 
         if (userRepo.existsByUsername(user.getUsername())) {
             throw new UserAlreadyExistsException( "account with this username already exists");
         }
-        if (userRepo.existsByEmailId(user.getEmailId())) {
-            throw new UserAlreadyExistsException( "account with this email already exists");
-        }
 
+        if(userRepo.existsByEmailId(user.getEmailId())){
+            throw new UserAlreadyExistsException( "account with this emailId already exists");
+        }
         Users newUser= new Users();
         newUser.setUsername(user.getUsername());
         newUser.setPassword(user.getPassword());
@@ -83,16 +83,15 @@ public class UserService {
             newUser=userRepo.save(newUser);
             JobSeeker jobSeeker =new JobSeeker();
             jobSeekerProfileService.createProfile(newUser, jobSeeker);
-            return new ResponseEntity<>("registration done. You can login and Update your profile",HttpStatus.OK);
         }
         else{
             newUser.setRole(user.getRole());
             newUser=userRepo.save(newUser);
             Recruiter recruiter = new Recruiter();
             recruiterProfileService.createProfile(newUser, recruiter);
-            return new ResponseEntity<>("registration done. You can login and Update your profile",HttpStatus.OK);
 
         }
+        return "registration done. You can login and Update your profile";
 
     }
 
@@ -111,7 +110,7 @@ public class UserService {
             return jwtService.generateToken(loginRequest.getUsername());
         }
         else{
-            throw new AuthenticationCredentialsNotFoundException("Invalid login details");
+            throw new BadCredentialsException("Invalid login details");
         }
     }
 
@@ -121,10 +120,9 @@ public class UserService {
     public String deleteAccount() {
 
         Users loggedInUser=authenticationService.getLoggedInUser();
-        String username=loggedInUser.getUsername();
         userRepo.deleteById(loggedInUser.getUserId());
 
-        return username;
+        return "Account is deleted successfully";
 
     }
 

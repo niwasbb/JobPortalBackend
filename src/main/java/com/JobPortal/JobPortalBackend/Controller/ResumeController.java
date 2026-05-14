@@ -24,23 +24,25 @@ public class ResumeController {
     @GetMapping("/{resumeFileName}")
     public ResponseEntity<byte[]> getResume(@PathVariable String resumeFileName) {
         byte[] data= resumeService.getResume(resumeFileName);
-        return ResponseEntity.ok()
-                .header("Content-Disposition", "attachment; filename=" + resumeFileName)
+        return ResponseEntity.ok().header("Content-Disposition", "attachment; filename=" + resumeFileName)
                 .body(data);
     }
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<String> uploadResume(@RequestParam("file") MultipartFile file) {
+
         if (!resumeService.validateFile(file)) {
             return badRequest().body("Only PDF and DOCX files are allowed.");
         }
 
-        return new ResponseEntity<>(resumeService.uploadResume(file),HttpStatus.OK);
+        String response=resumeService.uploadResume(file);
+        return new ResponseEntity<>(response,HttpStatus.OK);
     }
 
     @DeleteMapping()
     public ResponseEntity<String> deleteResume() {
-        return new ResponseEntity<>(resumeService.deleteResume(), HttpStatus.OK);
+        String response=resumeService.deleteResume();
+        return new ResponseEntity<>(response, HttpStatus.OK);
     }
 
 }

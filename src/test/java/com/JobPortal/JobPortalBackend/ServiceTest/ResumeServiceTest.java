@@ -76,6 +76,7 @@ public class ResumeServiceTest {
 
     @Test
     public void uploadResumeExceptionTest() throws IOException {
+
         Users user=new Users();
         user.setUsername("abc");
         user.setUserId(UUID.randomUUID());
@@ -88,7 +89,9 @@ public class ResumeServiceTest {
         when(resumeFile.getOriginalFilename()).thenReturn("resume.pdf");
         when(resumeFile.getBytes()).thenThrow(new IOException());
 
+
         Assertions.assertThrows(RuntimeException.class,()->resumeService.uploadResume(resumeFile));
+
     }
 
     @Test

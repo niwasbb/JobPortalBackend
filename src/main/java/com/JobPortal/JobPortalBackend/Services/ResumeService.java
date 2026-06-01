@@ -5,6 +5,7 @@ import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
@@ -27,6 +28,8 @@ public class ResumeService {
 
 
 
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
 
     private static final List<String> ALLOWED_TYPES = List.of("application/pdf",
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -45,6 +48,7 @@ public class ResumeService {
         JobSeeker jobSeeker = jobSeekerProfileRepo.findByUserUserId(users.getUserId()).orElseThrow(()->new RuntimeException("Job seeker profile not found"));
 
         PutObjectRequest putObjectRequest=PutObjectRequest.builder()
+                .bucket(bucketName)
                 .key(fileName)
                 .contentType(file.getContentType())
                 .build();
@@ -87,6 +91,7 @@ public class ResumeService {
     public byte[] getResume(String resumeFileName) {
 
         GetObjectRequest request=GetObjectRequest.builder()
+                .bucket(bucketName)
                 .key(resumeFileName)
                 .build();
 
@@ -108,6 +113,7 @@ public class ResumeService {
         String fileName= jobSeeker.getResume();
 
         DeleteObjectRequest deleteObjectRequest=DeleteObjectRequest.builder()
+                .bucket(bucketName)
                 .key(fileName)
                 .build();
 

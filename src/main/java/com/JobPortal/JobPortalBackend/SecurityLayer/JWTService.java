@@ -1,4 +1,4 @@
-package com.JobPortal.JobPortalBackend.Services;
+package com.JobPortal.JobPortalBackend.SecurityLayer;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

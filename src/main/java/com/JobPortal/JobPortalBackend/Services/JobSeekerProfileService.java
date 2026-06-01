@@ -8,7 +8,6 @@ import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -18,14 +17,13 @@ import java.util.UUID;
 public class JobSeekerProfileService {
 
     private final JobSeekerProfileRepo jobSeekerProfileRepo;
-    @Autowired
-    private ModelMapper modelMapper;
+    private final ModelMapper modelMapper;
     private final AuthenticationService authenticationService;
 
-    @Autowired
-    public JobSeekerProfileService(JobSeekerProfileRepo jobSeekerProfileRepo, AuthenticationService authenticationService) {
+    public JobSeekerProfileService(ModelMapper modelMapper,JobSeekerProfileRepo jobSeekerProfileRepo, AuthenticationService authenticationService) {
         this.jobSeekerProfileRepo = jobSeekerProfileRepo;
         this.authenticationService=authenticationService;
+        this.modelMapper =modelMapper;
 
     }
 

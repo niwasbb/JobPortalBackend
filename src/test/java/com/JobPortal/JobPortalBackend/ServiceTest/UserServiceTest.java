@@ -1,4 +1,4 @@
-package com.JobPortal.JobPortalBackend;
+package com.JobPortal.JobPortalBackend.ServiceTest;
 
 import com.JobPortal.JobPortalBackend.DTO.LoginRequest;
 import com.JobPortal.JobPortalBackend.DTO.UserRequest;
@@ -8,7 +8,7 @@ import com.JobPortal.JobPortalBackend.Model.UserRole;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
-import com.JobPortal.JobPortalBackend.Services.JWTService;
+import com.JobPortal.JobPortalBackend.SecurityLayer.JWTService;
 import com.JobPortal.JobPortalBackend.Services.JobSeekerProfileService;
 import com.JobPortal.JobPortalBackend.Services.RecruiterProfileService;
 import com.JobPortal.JobPortalBackend.Services.UserService;
@@ -176,7 +176,6 @@ public class UserServiceTest {
         Users user=new Users();
         user.setUserId(UUID.randomUUID());
         when(authenticationService.getLoggedInUser()).thenReturn(user);
-
         String s=userService.deleteAccount();
         verify(userRepo,times(1)).deleteById(user.getUserId());
 

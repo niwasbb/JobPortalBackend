@@ -1,12 +1,9 @@
 package com.JobPortal.JobPortalBackend.SecurityLayer;
 
-import com.JobPortal.JobPortalBackend.Services.JWTService;
-import com.JobPortal.JobPortalBackend.Services.MyUserDetailsService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -23,7 +20,6 @@ public class JWTFilter extends OncePerRequestFilter {
     private final JWTService jwtService;
     private final ApplicationContext context;
 
-    @Autowired
     public JWTFilter(JWTService jwtService,ApplicationContext context){
         this.jwtService=jwtService;
         this.context=context;

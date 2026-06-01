@@ -4,7 +4,6 @@ import com.JobPortal.JobPortalBackend.DTO.JobPostRequest;
 import com.JobPortal.JobPortalBackend.DTO.JobPostResponse;
 import com.JobPortal.JobPortalBackend.Services.JobPostService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -19,7 +18,7 @@ import java.util.UUID;
 public class JobPostController {
 
     private final JobPostService jobPostService;
-    @Autowired
+
     public JobPostController(JobPostService jobPostService){
         this.jobPostService=jobPostService;
     }

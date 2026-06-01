@@ -11,7 +11,6 @@ import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
 import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -34,7 +33,6 @@ public class ApplicationService {
     private final JobSeekerProfileRepo jobSeekerProfileRepo;
     private final EmailService emailService;
 
-    @Autowired
     public ApplicationService( JobPostRepo jobPostRepo, ApplicationRepo applicationRepo,
                                 AuthenticationService authenticationService,RecruiterProfileRepo recruiterProfileRepo,
                                JobSeekerProfileRepo jobSeekerProfileRepo,EmailService emailService) {
@@ -46,18 +44,30 @@ public class ApplicationService {
         this.emailService=emailService;
     }
 
+    private Users getCurrentUser() {
+        return authenticationService.getLoggedInUser();
+    }
+
+    private JobSeeker getCurrentJobSeeker() {
+        Users user = getCurrentUser();
+        return jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(() -> new UserNotFoundException("Profile not found"));
+    }
+
+    private Recruiter getCurrentRecruiter() {
+        Users user = getCurrentUser();
+        return recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(() -> new UserNotFoundException("Profile not found"));
+    }
 
 
     public Page<ApplicationDTO> getApplicantsList(UUID jobId , Pageable pageable) {
 
-        Users user=authenticationService.getLoggedInUser();
-        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Profile not found"));
-        List<JobPost> jobPosts=jobPostRepo.findAllByRecruiter_ProfileId(recruiter.getProfileId());
+        Recruiter recruiter = getCurrentRecruiter();
+        List<JobPost> jobPosts=recruiter.getJobPosts();
 
-        if(jobPosts.stream().noneMatch(jobPost -> jobPost.getJobId().equals(jobId))){
+        boolean ownsJob = jobPosts.stream().anyMatch(job -> job.getJobId().equals(jobId));
+        if(!ownsJob){
             throw  new AccessDeniedException("Job is not posted by you");
         }
-
         Page<JobApplication> applicationPage=applicationRepo.findAllByJobPostJobId(jobId,pageable);
 
         return applicationPage.map(application ->
@@ -68,34 +78,16 @@ public class ApplicationService {
     public ResponseEntity<String> applyForJob(UUID jobPostId) {
         JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found: "+jobPostId));
 
-        Users user=authenticationService.getLoggedInUser();
-        JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("profile not found"));
-        List<JobApplication> appliedJobs=applicationRepo.findAllByJobSeeker_ProfileId(jobSeeker.getProfileId());
+        JobSeeker jobSeeker =getCurrentJobSeeker();
+        List<JobApplication> appliedJobs=jobSeeker.getAppliedJobs();
 
         if(appliedJobs.stream().anyMatch(application -> application.getJobPost().getJobId().equals(jobPostId))){
 
-            JobApplication jobApplication= appliedJobs.stream().filter(application->
+            JobApplication existingJobApplication= appliedJobs.stream().filter(application->
                     application.getJobPost().getJobId().equals(jobPostId)).findFirst().orElseThrow(()->new ApplicationNotFoundException("Application not found"));
 
-            if(jobApplication.getStatus()==ApplicationStatus.CANCELED){
 
-                jobApplication.setStatus(ApplicationStatus.APPLIED);
-                jobApplication.setResume(jobSeeker.getResume());
-                applicationRepo.save(jobApplication);
-                return new ResponseEntity<>("Application submitted successfully",HttpStatus.OK);
-
-            }
-            if(jobApplication.getStatus()==ApplicationStatus.REJECTED){
-
-                return new ResponseEntity<>("Sorry, your were already applied for this job, got rejected",HttpStatus.OK);
-            }
-            if(jobApplication.getStatus()==ApplicationStatus.SHORTLISTED){
-
-                return new ResponseEntity<>("Congrats, your are shortlisted already, no action needed ",HttpStatus.OK);
-            }
-            jobApplication.setResume(jobSeeker.getResume());
-            applicationRepo.save(jobApplication);
-            return new ResponseEntity<>("already applied for this job", HttpStatus.BAD_REQUEST);
+            return handleExistingApplication(existingJobApplication,jobSeeker);
         }
 
         JobApplication jobApplication=new JobApplication();
@@ -111,11 +103,10 @@ public class ApplicationService {
 
     public ResponseEntity<String> cancelApplication(UUID applicationId) {
 
-        Users user=authenticationService.getLoggedInUser();
-        JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("profile not found"));
-        List<JobApplication> appliedJobs=applicationRepo.findAllByJobSeeker_ProfileId(jobSeeker.getProfileId());
-
-        if(appliedJobs.stream().noneMatch(application -> application.getApplicationId().equals(applicationId))){
+        JobSeeker jobSeeker = getCurrentJobSeeker();
+        List<JobApplication> applications=jobSeeker.getAppliedJobs();
+        boolean belongsToUser=applications.stream().anyMatch(app->app.getApplicationId().equals(applicationId));
+        if(!belongsToUser){
             return new ResponseEntity<>("Incorrect application Id", HttpStatus.BAD_REQUEST);
         }
 
@@ -129,8 +120,7 @@ public class ApplicationService {
 
     public Page<ApplicationDTO> getMyApplications(Pageable pageable) {
 
-        Users user=authenticationService.getLoggedInUser();
-        JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("profile not found"));
+        JobSeeker jobSeeker =getCurrentJobSeeker();
         Page<JobApplication>  jobApplications = applicationRepo.findAllByJobSeeker_ProfileId(jobSeeker.getProfileId(), pageable);
 
         return jobApplications.map(application->new ApplicationDTO(
@@ -149,10 +139,10 @@ public class ApplicationService {
         JobApplication jobApplication=applicationRepo.findById(applicationId).orElseThrow(()-> new ApplicationNotFoundException("Application not found"));
         jobApplication.setStatus(ApplicationStatus.SHORTLISTED);
         applicationRepo.save(jobApplication);
-        JobSeeker jobSeeker=jobApplication.getJobSeeker();
-        String emailId=jobSeeker.getEmailId();
-        String emailBody="Dear applicant,\n\tCongratulations, your application is shortlisted";
-        emailService.sendEmail(emailId,"Your application is shortlisted",emailBody);
+
+        sendStatusEmail(jobApplication.getJobSeeker(),
+                "Your application is shortlisted",
+                "Dear applicant,\n\tCongratulations, your application is shortlisted");
 
         return new ResponseEntity<>("Shortlisted",HttpStatus.OK);
     }
@@ -162,11 +152,34 @@ public class ApplicationService {
         JobApplication jobApplication=applicationRepo.findById(applicationId).orElseThrow(()-> new ApplicationNotFoundException("Application not found"));
         jobApplication.setStatus(ApplicationStatus.REJECTED);
         applicationRepo.save(jobApplication);
-        JobSeeker jobSeeker=jobApplication.getJobSeeker();
-        String emailId=jobSeeker.getEmailId();
-        String emailBody="Dear applicant,\n\tSorry, your application is rejected";
-        emailService.sendEmail(emailId,"Your application is rejected",emailBody);
 
+        sendStatusEmail(jobApplication.getJobSeeker(),
+                "Your application is rejected",
+                "Dear applicant,\n\tSorry, your application is rejected");
         return new ResponseEntity<>("Rejected",HttpStatus.OK);
+    }
+
+    private ResponseEntity<String> handleExistingApplication(JobApplication application, JobSeeker jobSeeker) {
+
+        switch (application.getStatus()) {
+            case CANCELED:
+                application.setStatus(ApplicationStatus.APPLIED);
+                application.setResume(jobSeeker.getResume());
+                applicationRepo.save(application);
+                return ResponseEntity.ok("Application submitted successfully");
+            case REJECTED:
+                return ResponseEntity.ok("Sorry, your were already applied for this job, got rejected");
+            case SHORTLISTED:
+                return ResponseEntity.ok("Congrats, your are shortlisted already, no action needed ");
+            default:
+                application.setResume(jobSeeker.getResume());
+                applicationRepo.save(application);
+                return ResponseEntity.badRequest().body("already applied for this job");
+        }
+
+    }
+    private void sendStatusEmail(JobSeeker jobSeeker, String subject, String body) {
+
+        emailService.sendEmail(jobSeeker.getEmailId(),subject, body);
     }
 }

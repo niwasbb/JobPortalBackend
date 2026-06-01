@@ -18,8 +18,13 @@ target/
 *.iws
 *.iml
 *.ipr
-src/main/resources/application.properties
+/src/main/resources/application.properties
 
+# mysql repo ###
+mysql
+
+
+#
 ### NetBeans ###
 /nbproject/private/
 /nbbuild/

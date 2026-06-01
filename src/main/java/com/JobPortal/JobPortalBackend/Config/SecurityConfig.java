@@ -1,10 +1,9 @@
 package com.JobPortal.JobPortalBackend.Config;
 
-import com.JobPortal.JobPortalBackend.SecurityLayer.CustomAccessDeniedHandler;
+import com.JobPortal.JobPortalBackend.Exception.CustomAccessDeniedHandler;
+import com.JobPortal.JobPortalBackend.Exception.JwtAuthenticationEntryPoint;
 import com.JobPortal.JobPortalBackend.SecurityLayer.JWTFilter;
-import com.JobPortal.JobPortalBackend.SecurityLayer.JwtAuthenticationEntryPoint;
-import com.JobPortal.JobPortalBackend.Services.MyUserDetailsService;
-import org.springframework.beans.factory.annotation.Autowired;
+import com.JobPortal.JobPortalBackend.SecurityLayer.MyUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -29,7 +28,6 @@ public class SecurityConfig {
     private final UserDetailsService userDetailsService;
     private final JWTFilter jwtFilter;
 
-    @Autowired
     public SecurityConfig(MyUserDetailsService userDetailsService,JWTFilter jwtFilter){
         this.userDetailsService=userDetailsService;
         this.jwtFilter=jwtFilter;
@@ -38,24 +36,37 @@ public class SecurityConfig {
 
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity httpSec){
+    public SecurityFilterChain securityFilterChain(HttpSecurity httpSec)throws Exception{
 
         return httpSec.csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth->auth.requestMatchers("/swagger-ui.html","/swagger-ui/**","/v3/api-docs/**",
-                                                                                                            "/resume/{resumeFileName}","/login","/register").permitAll()
-                        .requestMatchers(HttpMethod.PUT,"/recruiter").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.PUT,"/jobseeker").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.GET,"/applications/my_applications").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.GET,"/applications/{jobId}").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.PUT,"/applications/shortlist/{applicationId}").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.PUT,"/applications/reject/{applicationId}").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.POST,"/applications/{jobPostId}/apply").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.PUT,"/applications/cancel/{applicationId}").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.POST,"/jobs").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.PUT ,"/jobs/{jobPostId}").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.DELETE ,"/jobs/{jobPostId}").hasRole("RECRUITER")
-                        .requestMatchers(HttpMethod.POST,"/resume").hasRole("JOB_SEEKER")
-                        .requestMatchers(HttpMethod.DELETE,"/resume").hasRole("JOB_SEEKER")
+                                                                                                            "/resume/*","/login","/register").permitAll()
+                        .requestMatchers(HttpMethod.PUT,"/recruiter")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.PUT,"/jobseeker")
+                        .hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.GET,"/applications/my_applications")
+                        .hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.GET,"/applications/*")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.PUT,"/applications/shortlist/*")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.PUT,"/applications/reject/*")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.POST,"/applications/*/apply")
+                        .hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.PUT,"/applications/cancel/*")
+                        .hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.POST,"/jobs")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.PUT ,"/jobs/*")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.DELETE ,"/jobs/*")
+                        .hasRole("RECRUITER")
+                        .requestMatchers(HttpMethod.POST,"/resume")
+                        .hasRole("JOB_SEEKER")
+                        .requestMatchers(HttpMethod.DELETE,"/resume")
+                        .hasRole("JOB_SEEKER")
                         .anyRequest().authenticated()
                 ).exceptionHandling(customizer->customizer.accessDeniedHandler(new CustomAccessDeniedHandler())
                                                                                                 .authenticationEntryPoint(new JwtAuthenticationEntryPoint()))

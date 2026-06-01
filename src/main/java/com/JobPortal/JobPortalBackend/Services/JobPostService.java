@@ -11,7 +11,6 @@ import com.JobPortal.JobPortalBackend.Repository.JobPostRepo;
 import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -31,7 +30,6 @@ public class JobPostService {
     private final RecruiterProfileRepo recruiterProfileRepo;
 
 
-    @Autowired
     public JobPostService(JobPostRepo jobPostRepo, ModelMapper modelMapper,
                           AuthenticationService authenticationService,RecruiterProfileRepo recruiterProfileRepo) {
 
@@ -92,10 +90,11 @@ public class JobPostService {
 
         JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found with"));
         Users user= authenticationService.getLoggedInUser();
-        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Profile not found "+user.getUsername()));
-        List<JobPost> jobPosts=jobPostRepo.findAllByRecruiter_ProfileId(recruiter.getProfileId());
+        Recruiter recruiter =user.getRecruiter();
+        List<JobPost> jobPosts=recruiter.getJobPosts();
+        boolean match=jobPosts.stream().anyMatch(jobPost1->jobPost1.equals(jobPost));
 
-        if(jobPosts.stream().noneMatch(jobPost1 -> jobPost1.equals(jobPost))){
+        if(!match){
 
             throw new AccessDeniedException(" Job is not posted by you");
         }
@@ -107,10 +106,11 @@ public class JobPostService {
     public JobPostResponse updateJobPost(UUID jobPostId, JobPostRequest updatedJobPost) {
         JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found"));
         Users user= authenticationService.getLoggedInUser();
-        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Profile not found "+user.getUsername()));
-        List<JobPost> jobPosts=jobPostRepo.findAllByRecruiter_ProfileId(recruiter.getProfileId());
+        Recruiter recruiter =user.getRecruiter();
+        List<JobPost> jobPosts=recruiter.getJobPosts();
+        boolean match=jobPosts.stream().anyMatch(jobPost1 -> jobPost1.equals(jobPost));
 
-        if(jobPosts.stream().noneMatch(jobPost1 -> jobPost1.equals(jobPost))){
+        if(!match){
 
             throw new AccessDeniedException(" Job is not posted by you");
         }

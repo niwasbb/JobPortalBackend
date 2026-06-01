@@ -5,7 +5,6 @@ import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -36,7 +35,6 @@ public class ResumeService {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/msword");
 
-    @Autowired
     ResumeService(S3Client s3Client, AuthenticationService authenticationService, JobSeekerProfileRepo jobSeekerProfileRepo){
         this.authenticationService = authenticationService;
         this.s3Client = s3Client;
@@ -46,7 +44,6 @@ public class ResumeService {
 
     public String uploadResume(MultipartFile file) {
         Users users = authenticationService.getLoggedInUser();
-        System.out.println(file.getOriginalFilename());
         String fileName = users.getUsername() + "_Resume_"+file.getOriginalFilename();
         JobSeeker jobSeeker = jobSeekerProfileRepo.findByUserUserId(users.getUserId()).orElseThrow(()->new RuntimeException("Job seeker profile not found"));
 
@@ -104,7 +101,7 @@ public class ResumeService {
         try {
            return response.readAllBytes();
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new RuntimeException("Failed to read resume file",e);
         }
 
 

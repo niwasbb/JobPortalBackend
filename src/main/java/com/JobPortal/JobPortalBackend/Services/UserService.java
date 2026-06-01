@@ -11,8 +11,10 @@ import com.JobPortal.JobPortalBackend.Model.UserRole;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityLayer.JWTService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -22,6 +24,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+
 public class UserService {
 
 
@@ -35,8 +38,8 @@ public class UserService {
     private final AuthenticationService authenticationService;
     private final ModelMapper modelMapper=new ModelMapper();
     private final BCryptPasswordEncoder encoder=new BCryptPasswordEncoder(12);
+    private static final Logger log= LoggerFactory.getLogger(UserService.class);
 
-    @Autowired
     public UserService(UserRepo userRepo, AuthenticationManager authManager,
                        JWTService jwtService, JobSeekerProfileService jobSeekerProfileService,
                         RecruiterProfileService recruiterProfileService,AuthenticationService authenticationService){
@@ -55,20 +58,23 @@ public class UserService {
 
     public UsersResponse getUser() {
         Users user=authenticationService.getLoggedInUser();
-
+        log.info("Fetching profile for user: {}", user.getUsername());
         return modelMapper.map(user, UsersResponse.class);
 
     }
 
     @Transactional
     public String newUser(UserRequest user){
+        log.info("Registration request received for username: {}", user.getUsername());
         user.setPassword(encoder.encode( user.getPassword()));
 
         if (userRepo.existsByUsername(user.getUsername())) {
+            log.warn("Registration failed. Username already exists: {}",user.getUsername());
             throw new UserAlreadyExistsException( "account with this username already exists");
         }
 
         if(userRepo.existsByEmailId(user.getEmailId())){
+            log.warn("Registration failed. Email already exists: {}", user.getEmailId());
             throw new UserAlreadyExistsException( "account with this emailId already exists");
         }
         Users newUser= new Users();
@@ -77,6 +83,7 @@ public class UserService {
         newUser.setEmailId(user.getEmailId());
 
         if(user.getRole()==null || user.getRole()==UserRole.JOB_SEEKER){
+            log.debug("Creating Job Seeker profile for user: {}", user.getUsername());
 
             user.setRole(UserRole.JOB_SEEKER);
             newUser.setRole(user.getRole());
@@ -85,12 +92,15 @@ public class UserService {
             jobSeekerProfileService.createProfile(newUser, jobSeeker);
         }
         else{
+            log.debug("Creating Recruiter profile for user: {}", user.getUsername());
+
             newUser.setRole(user.getRole());
             newUser=userRepo.save(newUser);
             Recruiter recruiter = new Recruiter();
             recruiterProfileService.createProfile(newUser, recruiter);
 
         }
+        log.info("User registered successfully. UserId: {}, Username: {}, Role: {}", newUser.getUserId(), newUser.getUsername(), newUser.getRole());
         return "registration done. You can login and Update your profile";
 
     }
@@ -99,17 +109,24 @@ public class UserService {
 //    verifying login and generating JWT token
 
     public String userLogin(LoginRequest loginRequest){
+        log.info("Login attempt for username: {}", loginRequest.getUsername());
 
         if(!userRepo.existsByUsername(loginRequest.getUsername())) {
+            log.warn("Login failed. User not found: {}", loginRequest.getUsername());
             throw new UserNotFoundException("User not found");
         }
 
         Authentication authentication=authManager.authenticate(new UsernamePasswordAuthenticationToken(loginRequest.getUsername(),loginRequest.getPassword()));
 
         if(authentication.isAuthenticated()){
+            log.info("Login successful for username: {}", loginRequest.getUsername());
             return jwtService.generateToken(loginRequest.getUsername());
+
+
         }
         else{
+            log.warn("Login failed due to invalid credentials for username: {}", loginRequest.getUsername());
+
             throw new BadCredentialsException("Invalid login details");
         }
     }
@@ -120,7 +137,10 @@ public class UserService {
     public String deleteAccount() {
 
         Users loggedInUser=authenticationService.getLoggedInUser();
+        log.info("Account deletion requested by userId: {}, username: {}", loggedInUser.getUserId(), loggedInUser.getUsername());
+
         userRepo.deleteById(loggedInUser.getUserId());
+        log.info("Account deleted successfully. userId: {}, username: {}", loggedInUser.getUserId(), loggedInUser.getUsername());
 
         return "Account is deleted successfully";
 

@@ -1,4 +1,4 @@
-package com.JobPortal.JobPortalBackend.Services;
+package com.JobPortal.JobPortalBackend.SecurityLayer;
 
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
@@ -14,13 +14,11 @@ import org.springframework.stereotype.Service;
 public class MyUserDetailsService implements UserDetailsService {
 
 
-/*************  Dependencies       ****************************/
     private final UserRepo userRepo;
     @Autowired
     public MyUserDetailsService(UserRepo userRepo){
         this.userRepo=userRepo;
     }
-/************************************************************/
 
 
     @Override

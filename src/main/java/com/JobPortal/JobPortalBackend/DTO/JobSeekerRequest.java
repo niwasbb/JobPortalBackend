@@ -23,5 +23,4 @@ public class JobSeekerRequest {
 
     private String experience;
 
-
 }

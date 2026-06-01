@@ -1,7 +1,6 @@
 package com.JobPortal.JobPortalBackend.Controller;
 
 import com.JobPortal.JobPortalBackend.Services.ResumeService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +15,6 @@ public class ResumeController {
 
     private final ResumeService resumeService;
 
-    @Autowired
     ResumeController(ResumeService resumeService){
         this.resumeService=resumeService;
     }

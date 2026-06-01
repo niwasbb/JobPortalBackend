@@ -2,7 +2,6 @@ package com.JobPortal.JobPortalBackend.Controller;
 
 import com.JobPortal.JobPortalBackend.DTO.ApplicationDTO;
 import com.JobPortal.JobPortalBackend.Services.ApplicationService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -18,7 +17,6 @@ public class ApplicationsController {
 
     private final ApplicationService applicationService;
 
-    @Autowired
     ApplicationsController(ApplicationService applicationService){
 
         this.applicationService=applicationService;

@@ -1,0 +1,11 @@
+services:
+  JobPortalBackend:
+    image: jobportalbackend
+    container_name: jobportal-backend-c
+    ports:
+      - 8081:8080
+    env_file:
+      - ../jobportalbackend-env/.env
+
+
+

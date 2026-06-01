@@ -1,10 +1,11 @@
-package com.JobPortal.JobPortalBackend.Services;
+package com.JobPortal.JobPortalBackend.SecurityLayer;
 
 import com.JobPortal.JobPortalBackend.Model.Users;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
+
 import java.util.Collection;
 import java.util.Collections;
 

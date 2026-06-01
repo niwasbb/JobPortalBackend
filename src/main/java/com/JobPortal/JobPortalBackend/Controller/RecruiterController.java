@@ -4,7 +4,6 @@ import com.JobPortal.JobPortalBackend.DTO.RecruiterRequest;
 import com.JobPortal.JobPortalBackend.DTO.RecruiterResponse;
 import com.JobPortal.JobPortalBackend.Services.RecruiterProfileService;
 import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.UUID;
@@ -15,7 +14,6 @@ public class RecruiterController {
 
     private final RecruiterProfileService recruiterProfileService;
 
-    @Autowired
     RecruiterController(RecruiterProfileService recruiterProfileService){
         this.recruiterProfileService=recruiterProfileService;
     }

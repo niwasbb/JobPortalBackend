@@ -5,16 +5,16 @@ import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
 import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.*;
 
 import java.io.IOException;
 import java.util.List;
@@ -35,17 +35,27 @@ public class ResumeService {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/msword");
 
+    private static final Logger log = LoggerFactory.getLogger(ResumeService.class);
+
     ResumeService(S3Client s3Client, AuthenticationService authenticationService, JobSeekerProfileRepo jobSeekerProfileRepo){
         this.authenticationService = authenticationService;
         this.s3Client = s3Client;
         this.jobSeekerProfileRepo = jobSeekerProfileRepo;
     }
-
+    @PostConstruct
+    public void init() {
+        log.info("ResumeService initialized with bucket: {}", bucketName);
+    }
 
     public String uploadResume(MultipartFile file) {
         Users users = authenticationService.getLoggedInUser();
+
+        log.info("Resume upload requested by user: {}", users.getUsername());
+
         String fileName = users.getUsername() + "_Resume_"+file.getOriginalFilename();
         JobSeeker jobSeeker = jobSeekerProfileRepo.findByUserUserId(users.getUserId()).orElseThrow(()->new RuntimeException("Job seeker profile not found"));
+
+        log.info("Uploading file to S3. Bucket: {}, Key: {}", bucketName, fileName);
 
         PutObjectRequest putObjectRequest=PutObjectRequest.builder()
                 .bucket(bucketName)
@@ -55,12 +65,24 @@ public class ResumeService {
 
         try {
             s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
+            log.info("Resume uploaded successfully. User: {}, Key: {}", users.getUsername(), fileName);
+        } catch (S3Exception e) {
+
+            log.error("S3 upload failed. Bucket: {}, Key: {}, ErrorCode: {}, Message: {}",
+                    bucketName, fileName, e.awsErrorDetails().errorCode(), e.awsErrorDetails().errorMessage(), e);
+
+            throw e;
+
         } catch (IOException e) {
+            log.error("Failed to read uploaded file bytes. File: {}", fileName, e);
             throw new RuntimeException(e);
+
         }
 
         jobSeeker.setResume(fileName);
         jobSeekerProfileRepo.save(jobSeeker);
+
+        log.info("Resume information saved in database for userId: {}", users.getUserId());
 
         return "Resume uploaded successfully";
 
@@ -68,39 +90,61 @@ public class ResumeService {
 
 
     public Boolean validateFile(MultipartFile file){
+        log.info("Validating file. Name: {}, Type: {}, Size: {} bytes",
+                file.getOriginalFilename(),
+                file.getContentType(),
+                file.getSize());
+
         String fileName=file.getOriginalFilename();
         System.out.println(file.getContentType());
 
         if(file.isEmpty()){
+            log.warn("File validation failed: Empty file");
             throw new FileValidationException("Empty file");
         }
 
         if(file.getContentType()==null || !ALLOWED_TYPES.contains(file.getContentType())){
-
+            log.warn("File validation failed: Invalid content type {}", file.getContentType());
             throw new FileValidationException("Only PDF, Docx files are allowed");
         }
 
         if(fileName==null || !(fileName.endsWith(".pdf") || fileName.endsWith(".docx"))){
+            log.warn("File validation failed: Invalid filename {}", fileName);
             throw new FileValidationException("Invalid file name / Only PDF, Docx files are allowed ");
         }
-
+        log.info("File validation successful: {}", fileName);
         return true;
     }
 
 
     public byte[] getResume(String resumeFileName) {
 
+        log.info("Resume download requested. Bucket: {}, Key: {}", bucketName, resumeFileName);
+
         GetObjectRequest request=GetObjectRequest.builder()
                 .bucket(bucketName)
                 .key(resumeFileName)
                 .build();
-
+        try {
         ResponseInputStream<GetObjectResponse> response=s3Client.getObject(request);
 
+            byte[] fileBytes = response.readAllBytes();
 
-        try {
-           return response.readAllBytes();
+            log.info("Resume downloaded successfully. Key: {}, Size: {} bytes",
+                    resumeFileName, fileBytes.length);
+
+            return fileBytes;
+
+        } catch (S3Exception e) {
+
+            log.error(
+                    "S3 download failed. Bucket: {}, Key: {}, ErrorCode: {}, Message: {}",
+                    bucketName, resumeFileName, e.awsErrorDetails().errorCode(), e.awsErrorDetails().errorMessage(), e);
+            throw e;
         } catch (IOException e) {
+            log.error("Failed to read S3 response stream. Key: {}",
+                    resumeFileName, e);
+
             throw new RuntimeException("Failed to read resume file",e);
         }
 
@@ -109,18 +153,39 @@ public class ResumeService {
 
     public String deleteResume() {
         Users user=authenticationService.getLoggedInUser();
-        JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()->new RuntimeException("Job seeker profile not found"));
+        log.info("Resume deletion requested by user: {}", user.getUsername());
+        JobSeeker jobSeeker =jobSeekerProfileRepo.findByUserUserId(user.getUserId())
+                .orElseThrow(()->{
+                    log.error("Job seeker profile not found for userId: {}", user.getUserId());
+                    return new RuntimeException("Job seeker profile not found");
+                });
         String fileName= jobSeeker.getResume();
 
-        DeleteObjectRequest deleteObjectRequest=DeleteObjectRequest.builder()
-                .bucket(bucketName)
-                .key(fileName)
-                .build();
+        log.info("Deleting file from S3. Bucket: {}, Key: {}", bucketName, fileName);
 
-        s3Client.deleteObject(deleteObjectRequest);
+        try {
+
+            DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
+                            .bucket(bucketName)
+                            .key(fileName)
+                            .build();
+
+            s3Client.deleteObject(deleteObjectRequest);
+
+            log.info("File deleted successfully from S3. Key: {}", fileName);
+
+        } catch (S3Exception e) {
+
+            log.error("S3 delete failed. Bucket: {}, Key: {}, ErrorCode: {}, Message: {}",
+                    bucketName, fileName, e.awsErrorDetails().errorCode(), e.awsErrorDetails().errorMessage(), e);
+
+            throw e;
+        }
 
         jobSeeker.setResume(null);
         jobSeekerProfileRepo.save(jobSeeker);
+
+        log.info("Resume reference removed from database for userId: {}", user.getUserId());
 
         return "Resume deleted successfully";
     }

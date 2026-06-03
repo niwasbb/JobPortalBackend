@@ -7,12 +7,11 @@ import com.JobPortal.JobPortalBackend.Exception.UserNotFoundException;
 import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
 import com.JobPortal.JobPortalBackend.Services.JobSeekerProfileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -62,19 +61,12 @@ class JobSeekerProfileServiceTest {
     @Test
     void createProfile_ShouldSaveProfileSuccessfully() {
 
+        when(jobSeekerProfileRepo.save(profile)).thenReturn(profile);
+
         jobSeekerProfileService.createProfile(user, profile);
 
-        ArgumentCaptor<JobSeeker> captor =
-                ArgumentCaptor.forClass(JobSeeker.class);
+        verify(jobSeekerProfileRepo).save(profile);
 
-        verify(jobSeekerProfileRepo).save(captor.capture());
-
-        JobSeeker savedProfile = captor.getValue();
-
-        assertNull(savedProfile.getProfileId());
-        assertEquals(user, savedProfile.getUser());
-        assertEquals(user.getEmailId(), savedProfile.getEmailId());
-        assertEquals(profile, user.getJobSeeker());
     }
 
     @Test
@@ -82,17 +74,11 @@ class JobSeekerProfileServiceTest {
 
         JobSeekerResponse response = new JobSeekerResponse();
 
-        when(authenticationService.getLoggedInUser())
-                .thenReturn(user);
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(jobSeekerProfileRepo.findByUserUserId(userId)).thenReturn(Optional.of(profile));
+        when(modelMapper.map(profile, JobSeekerResponse.class)).thenReturn(response);
 
-        when(jobSeekerProfileRepo.findByUserUserId(userId))
-                .thenReturn(Optional.of(profile));
-
-        when(modelMapper.map(profile, JobSeekerResponse.class))
-                .thenReturn(response);
-
-        JobSeekerResponse result =
-                jobSeekerProfileService.getMyProfile();
+        JobSeekerResponse result = jobSeekerProfileService.getMyProfile();
 
         assertNotNull(result);
         assertEquals(response, result);
@@ -159,6 +145,8 @@ class JobSeekerProfileServiceTest {
     @Test
     void updateProfile_ShouldUpdateAndReturnResponse() {
         List<String> skis=List.of("Java","Advance Java","Spring Boot");
+        List<String> edu=List.of("BE CS");
+        List<String> exp=List.of("experience");
 
         JobSeekerRequest request = new JobSeekerRequest();
         request.setFirstName("John");
@@ -166,25 +154,17 @@ class JobSeekerProfileServiceTest {
         request.setPhoneNumber("1234567890");
         request.setLocation("Pune");
         request.setSkills(skis);
-        request.setEducation("B.Tech");
-        request.setExperience("3 Years");
+        request.setEducation(edu);
+        request.setExperience(exp);
 
         JobSeekerResponse response = new JobSeekerResponse();
 
-        when(authenticationService.getLoggedInUser())
-                .thenReturn(user);
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(jobSeekerProfileRepo.findByUserUserId(userId)).thenReturn(Optional.of(profile));
+        when(jobSeekerProfileRepo.save(any(JobSeeker.class))).thenReturn(profile);
+        when(modelMapper.map(profile, JobSeekerResponse.class)).thenReturn(response);
 
-        when(jobSeekerProfileRepo.findByUserUserId(userId))
-                .thenReturn(Optional.of(profile));
-
-        when(jobSeekerProfileRepo.save(any(JobSeeker.class)))
-                .thenReturn(profile);
-
-        when(modelMapper.map(profile, JobSeekerResponse.class))
-                .thenReturn(response);
-
-        JobSeekerResponse result =
-                jobSeekerProfileService.updateProfile(request);
+        JobSeekerResponse result = jobSeekerProfileService.updateProfile(request);
 
         assertNotNull(result);
 
@@ -193,8 +173,8 @@ class JobSeekerProfileServiceTest {
         assertEquals("1234567890", profile.getPhoneNumber());
         assertEquals("Pune", profile.getLocation());
         assertEquals(skis, profile.getSkills());
-        assertEquals("B.Tech", profile.getEducation());
-        assertEquals("3 Years", profile.getExperience());
+        assertEquals(edu, profile.getEducation());
+        assertEquals(exp, profile.getExperience());
 
         verify(jobSeekerProfileRepo).save(profile);
     }

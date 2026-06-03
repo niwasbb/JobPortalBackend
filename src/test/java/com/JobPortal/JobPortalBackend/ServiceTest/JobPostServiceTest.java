@@ -3,13 +3,11 @@ package com.JobPortal.JobPortalBackend.ServiceTest;
 import com.JobPortal.JobPortalBackend.DTO.JobPostRequest;
 import com.JobPortal.JobPortalBackend.DTO.JobPostResponse;
 import com.JobPortal.JobPortalBackend.Exception.JobPostNotFound;
-import com.JobPortal.JobPortalBackend.Exception.UserNotFoundException;
 import com.JobPortal.JobPortalBackend.Model.JobPost;
 import com.JobPortal.JobPortalBackend.Model.Recruiter;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobPostRepo;
-import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
 import com.JobPortal.JobPortalBackend.Services.JobPostService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +20,6 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 
 import java.util.List;
 import java.util.Optional;
@@ -44,8 +41,6 @@ class JobPostServiceTest {
     @Mock
     private AuthenticationService authenticationService;
 
-    @Mock
-    private RecruiterProfileRepo recruiterProfileRepo;
 
     @InjectMocks
     private JobPostService jobPostService;
@@ -97,13 +92,13 @@ class JobPostServiceTest {
 
         Page<JobPost> page = new PageImpl<>(List.of(jobPost));
 
-        when(jobPostRepo.findAll("java", pageable)).thenReturn(page);
+        when(jobPostRepo.searchByKeyword("java", pageable)).thenReturn(page);
 
         Page<JobPostResponse> result = jobPostService.getJobs("java", pageable);
 
         assertEquals(1, result.getTotalElements());
 
-        verify(jobPostRepo).findAll("java", pageable);
+        verify(jobPostRepo).searchByKeyword("java", pageable);
     }
 
     @Test
@@ -112,8 +107,7 @@ class JobPostServiceTest {
         Users user = new Users();
         UUID userId = UUID.randomUUID();
         user.setUserId(userId);
-
-        Recruiter recruiter = new Recruiter();
+        user.setRecruiter(creatRecruiter());
 
         JobPostRequest request = new JobPostRequest();
         JobPost jobPost = new JobPost();
@@ -121,8 +115,6 @@ class JobPostServiceTest {
         JobPostResponse response = new JobPostResponse();
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
-
-        when(recruiterProfileRepo.findByUserUserId(userId)).thenReturn(Optional.of(recruiter));
 
         when(modelMapper.map(request, JobPost.class)).thenReturn(jobPost);
 
@@ -137,19 +129,6 @@ class JobPostServiceTest {
         verify(jobPostRepo).save(jobPost);
     }
 
-    @Test
-    void postNewJob_ShouldThrowException_WhenRecruiterNotFound() {
-
-        Users user = new Users();
-        UUID userId = UUID.randomUUID();
-        user.setUserId(userId);
-
-        when(authenticationService.getLoggedInUser()).thenReturn(user);
-
-        when(recruiterProfileRepo.findByUserUserId(userId)).thenReturn(Optional.empty());
-
-        assertThrows(UserNotFoundException.class, () -> jobPostService.postNewJob(new JobPostRequest()));
-    }
 
     @Test
     void getJobPostById_ShouldReturnJob() {
@@ -193,7 +172,7 @@ class JobPostServiceTest {
         recruiter.setJobPosts(jobPosts);
         user.setRecruiter(recruiter);
 
-        when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(jobPost));
+        when(jobPostRepo.existsByJobIdAndRecruiterProfileId(jobId,recruiter.getProfileId())).thenReturn(true);
         when(authenticationService.getLoggedInUser()).thenReturn(user);
 
         ResponseEntity<String> response = jobPostService.deleteJobPost(jobId);
@@ -207,35 +186,17 @@ class JobPostServiceTest {
     void deleteJobPost_ShouldThrowException_WhenJobNotFound() {
 
         UUID jobId = UUID.randomUUID();
+        Recruiter recruiter=creatRecruiter();
+        Users user =new Users();
+        user.setRecruiter(recruiter);
 
-        when(jobPostRepo.findById(jobId)).thenReturn(Optional.empty());
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(jobPostRepo.existsByJobIdAndRecruiterProfileId(jobId,recruiter.getProfileId())).thenReturn(false);
 
         assertThrows(JobPostNotFound.class, () -> jobPostService.deleteJobPost(jobId));
     }
 
-    @Test
-    void deleteJobPost_ShouldThrowAccessDenied() {
 
-        UUID jobId = UUID.randomUUID();
-
-        List<JobPost> jobPosts = List.of(new JobPost());
-        Users user = new Users();
-        user.setUserId(UUID.randomUUID());
-
-        Recruiter recruiter = new Recruiter();
-        recruiter.setProfileId(UUID.randomUUID());
-        recruiter.setJobPosts(jobPosts);
-        user.setRecruiter(recruiter);
-        JobPost jobPost=new JobPost();
-        jobPost.setJobId(jobId);
-
-
-
-        when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(jobPost));
-        when(authenticationService.getLoggedInUser()).thenReturn(user);
-
-        assertThrows(AccessDeniedException.class, () -> jobPostService.deleteJobPost(jobId));
-    }
 
     @Test
     void updateJobPost_ShouldUpdateSuccessfully() {
@@ -255,9 +216,9 @@ class JobPostServiceTest {
         JobPostRequest request = new JobPostRequest();
         JobPostResponse response = new JobPostResponse();
 
-        when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(jobPost));
         when(authenticationService.getLoggedInUser()).thenReturn(user);
-        when(modelMapper.map(jobPost, JobPostResponse.class)).thenReturn(response);
+        when(jobPostRepo.findByJobIdAndRecruiterProfileId(jobId,recruiter.getProfileId())).thenReturn(Optional.of(jobPost));
+        when(modelMapper.map(jobPost,JobPostResponse.class)).thenReturn(response);
 
         JobPostResponse result = jobPostService.updateJobPost(jobId, request);
 
@@ -270,30 +231,13 @@ class JobPostServiceTest {
     void updateJobPost_ShouldThrowJobNotFound() {
 
         UUID jobId = UUID.randomUUID();
-
-        when(jobPostRepo.findById(jobId)).thenReturn(Optional.empty());
+        Users user=new Users();
+        Recruiter recruiter=creatRecruiter();
+        user.setRecruiter(recruiter);
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(jobPostRepo.findByJobIdAndRecruiterProfileId(jobId,recruiter.getProfileId())).thenReturn(Optional.empty());
 
         assertThrows(JobPostNotFound.class, () -> jobPostService.updateJobPost(jobId, new JobPostRequest()));
     }
 
-    @Test
-    void updateJobPost_ShouldThrowAccessDenied() {
-
-        UUID jobId = UUID.randomUUID();
-
-        List<JobPost> jobPosts=List.of(new JobPost());
-        Users user = new Users();
-        user.setUserId(UUID.randomUUID());
-        Recruiter recruiter = new Recruiter();
-        recruiter.setProfileId(UUID.randomUUID());
-        recruiter.setJobPosts(jobPosts);
-        user.setRecruiter(recruiter);
-        JobPost jobPost = new JobPost();
-        jobPost.setJobId(jobId);
-
-        when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(jobPost));
-        when(authenticationService.getLoggedInUser()).thenReturn(user);
-
-        assertThrows(AccessDeniedException.class, () -> jobPostService.updateJobPost(jobId, new JobPostRequest()));
-    }
 }

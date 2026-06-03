@@ -36,11 +36,14 @@ public class JobSeeker {
 
     private String location;
 
+    @ElementCollection
     private List<String> skills;
 
-    private String education;
+    @ElementCollection
+    private List<String> education;
 
-    private String experience;
+    @ElementCollection
+    private List<String> experience;
 
     private String resume;
 

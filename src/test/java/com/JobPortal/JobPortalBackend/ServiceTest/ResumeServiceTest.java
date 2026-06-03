@@ -4,7 +4,7 @@ package com.JobPortal.JobPortalBackend.ServiceTest;
 import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
 import com.JobPortal.JobPortalBackend.Services.ResumeService;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;

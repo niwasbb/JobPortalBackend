@@ -19,8 +19,8 @@ public class JobSeekerRequest {
 
     private List<String> skills;
 
-    private String education;
+    private List<String> education;
 
-    private String experience;
+    private List<String> experience;
 
 }

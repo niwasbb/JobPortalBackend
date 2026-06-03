@@ -10,11 +10,11 @@ import com.JobPortal.JobPortalBackend.Model.Recruiter;
 import com.JobPortal.JobPortalBackend.Model.UserRole;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
-import com.JobPortal.JobPortalBackend.SecurityLayer.JWTService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.JWTService;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -24,11 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-
+@Slf4j
+@AllArgsConstructor
 public class UserService {
-
-
-    /*************  Dependencies       ********************************************************************************/
 
     private final UserRepo userRepo;
     private final AuthenticationManager authManager;
@@ -36,24 +34,9 @@ public class UserService {
     private final JobSeekerProfileService jobSeekerProfileService;
     private final RecruiterProfileService recruiterProfileService;
     private final AuthenticationService authenticationService;
-    private final ModelMapper modelMapper=new ModelMapper();
+    private final ModelMapper modelMapper;
     private final BCryptPasswordEncoder encoder=new BCryptPasswordEncoder(12);
-    private static final Logger log= LoggerFactory.getLogger(UserService.class);
 
-    public UserService(UserRepo userRepo, AuthenticationManager authManager,
-                       JWTService jwtService, JobSeekerProfileService jobSeekerProfileService,
-                        RecruiterProfileService recruiterProfileService,AuthenticationService authenticationService){
-        this.userRepo=userRepo;
-        this.authManager=authManager;
-        this.jwtService=jwtService;
-        this.jobSeekerProfileService=jobSeekerProfileService;
-        this.recruiterProfileService=recruiterProfileService;
-        this.authenticationService=authenticationService;
-    }
-    /******************************************************************************************************************/
-
-
-//    new user registration
 
 
     public UsersResponse getUser() {

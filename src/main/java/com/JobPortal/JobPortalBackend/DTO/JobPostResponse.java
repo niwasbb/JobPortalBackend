@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.UUID;
 
 @Data
@@ -30,10 +31,13 @@ public class JobPostResponse {
     private String jobDescription;
 
     @NotBlank
-    private String requiredSkills;
+    private List<String> requiredSkills;
 
     @NotBlank
-    private String requiredEducation;
+    private List<String> requiredEducation;
+
+    @NotBlank
+    private List<String> requiredExperience;
 
     private int noOfVacancy;
 

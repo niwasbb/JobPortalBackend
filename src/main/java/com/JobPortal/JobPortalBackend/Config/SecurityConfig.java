@@ -2,8 +2,8 @@ package com.JobPortal.JobPortalBackend.Config;
 
 import com.JobPortal.JobPortalBackend.Exception.CustomAccessDeniedHandler;
 import com.JobPortal.JobPortalBackend.Exception.JwtAuthenticationEntryPoint;
-import com.JobPortal.JobPortalBackend.SecurityLayer.JWTFilter;
-import com.JobPortal.JobPortalBackend.SecurityLayer.MyUserDetailsService;
+import com.JobPortal.JobPortalBackend.SecurityService.JWTFilter;
+import com.JobPortal.JobPortalBackend.SecurityService.MyUserDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;

@@ -6,7 +6,7 @@ import com.JobPortal.JobPortalBackend.Exception.UserNotFoundException;
 import com.JobPortal.JobPortalBackend.Model.Recruiter;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
 import com.JobPortal.JobPortalBackend.Services.RecruiterProfileService;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,10 +67,8 @@ class RecruiterProfileServiceTest {
         RecruiterResponse expectedResponse = new RecruiterResponse();
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
-        when(recruiterProfileRepo.findByUserUserId(userId))
-                .thenReturn(Optional.of(recruiter));
-        when(modelMapper.map(recruiter, RecruiterResponse.class))
-                .thenReturn(expectedResponse);
+        when(recruiterProfileRepo.findByUserUserId(userId)).thenReturn(Optional.of(recruiter));
+        when(modelMapper.map(recruiter, RecruiterResponse.class)).thenReturn(expectedResponse);
 
         RecruiterResponse result = recruiterProfileService.getMyProfile();
 
@@ -91,17 +89,14 @@ class RecruiterProfileServiceTest {
         user.setUserId(userId);
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
-        when(recruiterProfileRepo.findByUserUserId(userId))
-                .thenReturn(Optional.empty());
+        when(recruiterProfileRepo.findByUserUserId(userId)).thenReturn(Optional.empty());
 
-        UserNotFoundException exception =
-                assertThrows(UserNotFoundException.class,
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                         () -> recruiterProfileService.getMyProfile());
 
         assertEquals("Profile not found", exception.getMessage());
 
-        verify(modelMapper, never())
-                .map(any(), eq(RecruiterResponse.class));
+        verify(modelMapper, never()).map(any(), eq(RecruiterResponse.class));
     }
 
     @Test
@@ -112,14 +107,10 @@ class RecruiterProfileServiceTest {
         Recruiter recruiter = new Recruiter();
         RecruiterResponse response = new RecruiterResponse();
 
-        when(recruiterProfileRepo.findById(profileId))
-                .thenReturn(Optional.of(recruiter));
+        when(recruiterProfileRepo.findById(profileId)).thenReturn(Optional.of(recruiter));
+        when(modelMapper.map(recruiter, RecruiterResponse.class)).thenReturn(response);
 
-        when(modelMapper.map(recruiter, RecruiterResponse.class))
-                .thenReturn(response);
-
-        RecruiterResponse result =
-                recruiterProfileService.getProfileByUserId(profileId);
+        RecruiterResponse result = recruiterProfileService.getProfileByUserId(profileId);
 
         assertNotNull(result);
         assertEquals(response, result);
@@ -133,17 +124,14 @@ class RecruiterProfileServiceTest {
 
         UUID profileId = UUID.randomUUID();
 
-        when(recruiterProfileRepo.findById(profileId))
-                .thenReturn(Optional.empty());
+        when(recruiterProfileRepo.findById(profileId)).thenReturn(Optional.empty());
 
-        UserNotFoundException exception =
-                assertThrows(UserNotFoundException.class,
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                         () -> recruiterProfileService.getProfileByUserId(profileId));
 
         assertEquals("Profile not found", exception.getMessage());
 
-        verify(modelMapper, never())
-                .map(any(), eq(RecruiterResponse.class));
+        verify(modelMapper, never()).map(any(), eq(RecruiterResponse.class));
     }
 
     @Test
@@ -166,17 +154,13 @@ class RecruiterProfileServiceTest {
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
 
-        when(recruiterProfileRepo.findByUserUserId(userId))
-                .thenReturn(Optional.of(existingProfile));
+        when(recruiterProfileRepo.findByUserUserId(userId)).thenReturn(Optional.of(existingProfile));
 
-        when(recruiterProfileRepo.save(existingProfile))
-                .thenReturn(existingProfile);
+        when(recruiterProfileRepo.save(existingProfile)).thenReturn(existingProfile);
 
-        when(modelMapper.map(existingProfile, RecruiterResponse.class))
-                .thenReturn(response);
+        when(modelMapper.map(existingProfile, RecruiterResponse.class)).thenReturn(response);
 
-        RecruiterResponse result =
-                recruiterProfileService.updateProfile(request);
+        RecruiterResponse result = recruiterProfileService.updateProfile(request);
 
         assertNotNull(result);
         assertEquals(response, result);
@@ -201,17 +185,14 @@ class RecruiterProfileServiceTest {
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
 
-        when(recruiterProfileRepo.findByUserUserId(userId))
-                .thenReturn(Optional.empty());
+        when(recruiterProfileRepo.findByUserUserId(userId)).thenReturn(Optional.empty());
 
-        UserNotFoundException exception =
-                assertThrows(UserNotFoundException.class,
+        UserNotFoundException exception = assertThrows(UserNotFoundException.class,
                         () -> recruiterProfileService.updateProfile(request));
 
         assertEquals("Profile not found", exception.getMessage());
 
         verify(recruiterProfileRepo, never()).save(any());
-        verify(modelMapper, never())
-                .map(any(), eq(RecruiterResponse.class));
+        verify(modelMapper, never()).map(any(), eq(RecruiterResponse.class));
     }
 }

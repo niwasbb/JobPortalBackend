@@ -1,19 +1,18 @@
-package com.JobPortal.JobPortalBackend.SecurityLayer;
+package com.JobPortal.JobPortalBackend.SecurityService;
 
 import com.JobPortal.JobPortalBackend.Model.Users;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Service;
 
 import java.util.Collection;
 import java.util.Collections;
 
-@Service
+
 public class MyUserDetails implements UserDetails {
 
-    private Users user;
+    private final Users user;
 
     public MyUserDetails(Users user){
         this.user=user;

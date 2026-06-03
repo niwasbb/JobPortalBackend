@@ -1,4 +1,4 @@
-package com.JobPortal.JobPortalBackend.SecurityLayer;
+package com.JobPortal.JobPortalBackend.SecurityService;
 
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;

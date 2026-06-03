@@ -5,6 +5,8 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 
+import java.util.List;
+
 @Data
 @RequiredArgsConstructor
 @AllArgsConstructor
@@ -21,11 +23,11 @@ public class JobPostRequest {
 
     private String jobDescription;
 
-    @NotBlank
-    private String requiredSkills;
+    private List<String> requiredSkills;
 
-    @NotBlank
-    private String requiredEducation;
+    private List<String> requiredEducation;
+
+    private List<String> requiredExperience;
 
     private int noOfVacancy;
 

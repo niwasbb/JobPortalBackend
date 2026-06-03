@@ -4,9 +4,9 @@ import com.JobPortal.JobPortalBackend.Exception.FileValidationException;
 import com.JobPortal.JobPortalBackend.Model.JobSeeker;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -19,13 +19,13 @@ import java.io.IOException;
 import java.util.List;
 
 @Service
+@Slf4j
+@RequiredArgsConstructor
 public class ResumeService {
 
     private final S3Client s3Client;
     private final AuthenticationService authenticationService;
     private final JobSeekerProfileRepo jobSeekerProfileRepo;
-
-
 
     @Value("${aws.s3.bucket-name}")
     private String bucketName;
@@ -34,13 +34,6 @@ public class ResumeService {
             "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
             "application/msword");
 
-    private static final Logger log = LoggerFactory.getLogger(ResumeService.class);
-
-    ResumeService(S3Client s3Client, AuthenticationService authenticationService, JobSeekerProfileRepo jobSeekerProfileRepo){
-        this.authenticationService = authenticationService;
-        this.s3Client = s3Client;
-        this.jobSeekerProfileRepo = jobSeekerProfileRepo;
-    }
 
     public String uploadResume(MultipartFile file) {
         Users users = authenticationService.getLoggedInUser();
@@ -63,7 +56,7 @@ public class ResumeService {
             log.info("Resume uploaded successfully. User: {}, Key: {}", users.getUsername(), fileName);
 
         } catch (S3Exception e) {
-            log.error("S3 upload failed. Bucket: {}, Key: {} Message: {}", bucketName, fileName, e.awsErrorDetails().errorMessage());
+            log.error("S3 upload failed. Bucket: {}, Key: {} Message: {}", bucketName, fileName, e.awsErrorDetails().errorMessage(),e);
             throw e;
 
         } catch (IOException e) {
@@ -125,7 +118,7 @@ public class ResumeService {
 
         } catch (S3Exception e) {
 
-            log.error("S3 download failed. Bucket: {}, Key: {},Message: {}", bucketName, resumeFileName, e.awsErrorDetails().errorMessage());
+            log.error("S3 download failed. Bucket: {}, Key: {},Message: {}", bucketName, resumeFileName, e.awsErrorDetails().errorMessage(), e);
             throw e;
 
         } catch (IOException e) {
@@ -162,7 +155,7 @@ public class ResumeService {
 
         } catch (S3Exception e) {
 
-            log.error("S3 delete failed. Bucket: {}, Key: {}, Message: {}", bucketName, fileName, e.awsErrorDetails().errorMessage());
+            log.error("S3 delete failed. Bucket: {}, Key: {}, Message: {}", bucketName, fileName, e.awsErrorDetails().errorMessage(),e);
 
             throw e;
         }

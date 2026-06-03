@@ -3,25 +3,27 @@ package com.JobPortal.JobPortalBackend.Services;
 import com.JobPortal.JobPortalBackend.DTO.JobPostRequest;
 import com.JobPortal.JobPortalBackend.DTO.JobPostResponse;
 import com.JobPortal.JobPortalBackend.Exception.JobPostNotFound;
-import com.JobPortal.JobPortalBackend.Exception.UserNotFoundException;
 import com.JobPortal.JobPortalBackend.Model.JobPost;
 import com.JobPortal.JobPortalBackend.Model.Recruiter;
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.JobPostRepo;
 import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
+import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
-import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 @Service
+@Slf4j
+@AllArgsConstructor
 public class JobPostService {
 
     private final JobPostRepo jobPostRepo;
@@ -30,25 +32,21 @@ public class JobPostService {
     private final RecruiterProfileRepo recruiterProfileRepo;
 
 
-    public JobPostService(JobPostRepo jobPostRepo, ModelMapper modelMapper,
-                          AuthenticationService authenticationService,RecruiterProfileRepo recruiterProfileRepo) {
-
-        this.jobPostRepo=jobPostRepo;
-        this.modelMapper=modelMapper;
-        this.authenticationService=authenticationService;
-        this.recruiterProfileRepo=recruiterProfileRepo;
-    }
-
-
-
     public Page<JobPostResponse> getJobs(String searchBy, Pageable pageable){
+        log.info("Fetching job posts. SearchBy: {}, Page: {}, Size: {}", searchBy, pageable.getPageNumber(), pageable.getPageSize());
+
         Page<JobPost> jobPostPage;
 
         if(searchBy ==null|| searchBy.isEmpty()){
+            log.debug("Fetching all job posts");
             jobPostPage =jobPostRepo.findAll(pageable);
         }
-        else
-            jobPostPage = jobPostRepo.findAll(searchBy,pageable);
+        else {
+            log.debug("Searching job posts with keyword: {}", searchBy);
+            jobPostPage = jobPostRepo.searchByKeyword(searchBy, pageable);
+        }
+
+        log.info("Retrieved {} job posts", jobPostPage.getNumberOfElements());
 
         return jobPostPage.map(jobPost ->
             new JobPostResponse(jobPost.getJobId(),
@@ -59,72 +57,92 @@ public class JobPostService {
                     jobPost.getJobDescription(),
                     jobPost.getRequiredSkills(),
                     jobPost.getRequiredEducation(),
+                    jobPost.getRequiredExperience(),
                     jobPost.getNoOfVacancy(),
                     jobPost.getSalaryRange())
         );
     }
 
-
+    private Recruiter getRecruiter(){
+        Users user=authenticationService.getLoggedInUser();
+        return user.getRecruiter();
+    }
 
     public JobPostResponse postNewJob(JobPostRequest newJobPost) {
 
-        Users user= authenticationService.getLoggedInUser();
-        Recruiter recruiter =recruiterProfileRepo.findByUserUserId(user.getUserId()).orElseThrow(()-> new UserNotFoundException("Recruiter Profile not found for user "+user.getUsername()));
+        Recruiter recruiter =getRecruiter();
+
+        log.info("RecruiterId {} is creating a new job post", recruiter.getProfileId());
 
         JobPost jobPost=modelMapper.map(newJobPost,JobPost.class);
         jobPost.setRecruiter(recruiter);
 
         JobPost savedJobPost= jobPostRepo.save(jobPost);
+
+        log.info("Job post created successfully. JobId: {}, RecruiterId: {}", savedJobPost.getJobId(), recruiter.getProfileId());
+
         return modelMapper.map(savedJobPost, JobPostResponse.class);
     }
 
     public JobPostResponse getJobPostById(UUID jobPostId){
+        log.info("Fetching job post with ID: {}", jobPostId);
 
-        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found "+jobPostId));
+        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()->{
+                log.warn("Job post not found. JobId: {}", jobPostId);
+                return new JobPostNotFound("Job Post not found "+jobPostId);
+            });
+
+        log.info("Job post found. JobId: {}", jobPostId);
 
         return modelMapper.map(jobPost, JobPostResponse.class);
     }
 
-
     public ResponseEntity<String> deleteJobPost(UUID jobPostId) {
 
-        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found with"));
-        Users user= authenticationService.getLoggedInUser();
-        Recruiter recruiter =user.getRecruiter();
-        List<JobPost> jobPosts=recruiter.getJobPosts();
-        boolean match=jobPosts.stream().anyMatch(jobPost1->jobPost1.equals(jobPost));
+        log.info("Delete request received for JobId: {}", jobPostId);
 
+        Recruiter recruiter =getRecruiter();
+        boolean match=jobPostRepo.existsByJobIdAndRecruiterProfileId(jobPostId,recruiter.getProfileId());
         if(!match){
-
-            throw new AccessDeniedException(" Job is not posted by you");
+            log.warn("JobPost not found / Unauthorized delete attempt. RecruiterId: {}, JobId: {}", recruiter.getProfileId(), jobPostId);
+            throw new JobPostNotFound(" Job post not found / Job is not posted by you");
         }
+
         jobPostRepo.deleteById(jobPostId);
+
+        log.info("Job post deleted successfully. JobId: {}, DeletedBy: {}", jobPostId, recruiter.getProfileId());
 
         return new ResponseEntity<>("Job Post deleted successfully", HttpStatus.OK);
     }
 
     public JobPostResponse updateJobPost(UUID jobPostId, JobPostRequest updatedJobPost) {
-        JobPost jobPost=jobPostRepo.findById(jobPostId).orElseThrow(()-> new JobPostNotFound("Job Post not found"));
-        Users user= authenticationService.getLoggedInUser();
-        Recruiter recruiter =user.getRecruiter();
-        List<JobPost> jobPosts=recruiter.getJobPosts();
-        boolean match=jobPosts.stream().anyMatch(jobPost1 -> jobPost1.equals(jobPost));
+        log.info("Update request received for JobId: {}", jobPostId);
 
-        if(!match){
+        Recruiter recruiter =getRecruiter();
 
-            throw new AccessDeniedException(" Job is not posted by you");
+        Optional<JobPost> jobPost=jobPostRepo.findByJobIdAndRecruiterProfileId(jobPostId,recruiter.getProfileId());
+
+        if(jobPost.isEmpty()){
+            log.warn("Job post not found / Unauthorized update attempt. RecruiterId: {}, JobId: {}", recruiter.getProfileId(), jobPostId);
+
+            throw new JobPostNotFound(" Job Post not found / Job is not posted by you");
         }
-        jobPost.setJobDescription(updatedJobPost.getJobDescription());
-        jobPost.setTitle(updatedJobPost.getTitle());
-        jobPost.setLocation(updatedJobPost.getLocation());
-        jobPost.setNoOfVacancy(updatedJobPost.getNoOfVacancy());
-        jobPost.setRequiredEducation(updatedJobPost.getRequiredEducation());
-        jobPost.setRequiredSkills(updatedJobPost.getRequiredSkills());
-        jobPost.setSalaryRange(updatedJobPost.getSalaryRange());
-        jobPost.setCompanyName(updatedJobPost.getCompanyName());
+        log.debug("Updating job post fields. JobId: {}", jobPostId);
 
-        jobPostRepo.save(jobPost);
+        JobPost post=jobPost.get();
 
-        return modelMapper.map(jobPost, JobPostResponse.class);
+        post.setJobDescription(updatedJobPost.getJobDescription());
+        post.setTitle(updatedJobPost.getTitle());
+        post.setLocation(updatedJobPost.getLocation());
+        post.setNoOfVacancy(updatedJobPost.getNoOfVacancy());
+        post.setRequiredEducation(updatedJobPost.getRequiredEducation());
+        post.setRequiredSkills(updatedJobPost.getRequiredSkills());
+        post.setRequiredExperience(updatedJobPost.getRequiredExperience());
+        post.setSalaryRange(updatedJobPost.getSalaryRange());
+        post.setCompanyName(updatedJobPost.getCompanyName());
+
+        jobPostRepo.save(post);
+        log.info("Job post updated successfully. JobId: {}, UpdatedBy: {}", jobPostId, recruiter.getProfileId());
+        return modelMapper.map(post, JobPostResponse.class);
     }
 }

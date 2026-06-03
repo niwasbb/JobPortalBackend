@@ -34,11 +34,14 @@ public class JobPost {
     @NotBlank
     private String location;
 
-    @NotBlank
-    private String requiredSkills;
+    @ElementCollection
+    private List<String> requiredSkills;
 
-    @NotBlank
-    private String requiredEducation;
+    @ElementCollection
+    private List<String> requiredEducation;
+
+    @ElementCollection
+    private List<String> requiredExperience;
 
     private int noOfVacancy=1;
 

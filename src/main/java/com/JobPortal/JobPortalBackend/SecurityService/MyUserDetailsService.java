@@ -1,8 +1,7 @@
-package com.JobPortal.JobPortalBackend.SecurityLayer;
+package com.JobPortal.JobPortalBackend.SecurityService;
 
 import com.JobPortal.JobPortalBackend.Model.Users;
 import com.JobPortal.JobPortalBackend.Repository.UserRepo;
-import lombok.AllArgsConstructor;
 import lombok.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -11,11 +10,14 @@ import org.springframework.stereotype.Service;
 
 
 @Service
-@AllArgsConstructor
 public class MyUserDetailsService implements UserDetailsService {
 
 
     private final UserRepo userRepo;
+    MyUserDetailsService(UserRepo userRepo){
+        this.userRepo=userRepo;
+    }
+
 
     @Override
     public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {

@@ -8,7 +8,7 @@ import com.JobPortal.JobPortalBackend.Repository.ApplicationRepo;
 import com.JobPortal.JobPortalBackend.Repository.JobPostRepo;
 import com.JobPortal.JobPortalBackend.Repository.JobSeekerProfileRepo;
 import com.JobPortal.JobPortalBackend.Repository.RecruiterProfileRepo;
-import com.JobPortal.JobPortalBackend.SecurityLayer.AuthenticationService;
+import com.JobPortal.JobPortalBackend.SecurityService.AuthenticationService;
 import com.JobPortal.JobPortalBackend.Services.ApplicationService;
 import com.JobPortal.JobPortalBackend.Services.EmailService;
 import org.junit.jupiter.api.Test;
@@ -73,6 +73,7 @@ class ApplicationServiceTest {
 
         Users user = createUser();
         JobSeeker seeker = createJobSeeker();
+        user.setJobSeeker(seeker);
 
         JobPost post = new JobPost();
         post.setJobId(jobId);
@@ -80,6 +81,7 @@ class ApplicationServiceTest {
         when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(post));
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
+        when(applicationRepo.findByJobPostJobIdAndJobSeekerProfileId(jobId,seeker.getProfileId())).thenReturn(Optional.empty());
 
         ResponseEntity<String> response = applicationService.applyForJob(jobId);
 
@@ -117,6 +119,7 @@ class ApplicationServiceTest {
         when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(post));
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
+        when(applicationRepo.findByJobPostJobIdAndJobSeekerProfileId(jobId,seeker.getProfileId())).thenReturn(Optional.of(application));
 
         ResponseEntity<String> response = applicationService.applyForJob(jobId);
 
@@ -146,6 +149,7 @@ class ApplicationServiceTest {
         when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(post));
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
+        when(applicationRepo.findByJobPostJobIdAndJobSeekerProfileId(jobId,seeker.getProfileId())).thenReturn(Optional.of(application));
 
         ResponseEntity<String> response = applicationService.applyForJob(jobId);
 
@@ -172,6 +176,7 @@ class ApplicationServiceTest {
         when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(post));
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
+        when(applicationRepo.findByJobPostJobIdAndJobSeekerProfileId(jobId,seeker.getProfileId())).thenReturn(Optional.of(application));
 
         ResponseEntity<String> response = applicationService.applyForJob(jobId);
 
@@ -198,7 +203,7 @@ class ApplicationServiceTest {
         when(jobPostRepo.findById(jobId)).thenReturn(Optional.of(post));
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
-
+        when(applicationRepo.findByJobPostJobIdAndJobSeekerProfileId(jobId,seeker.getProfileId())).thenReturn(Optional.of(application));
         ResponseEntity<String> response = applicationService.applyForJob(jobId);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
@@ -210,15 +215,14 @@ class ApplicationServiceTest {
 
         Users user = createUser();
         JobSeeker seeker = createJobSeeker();
-
         JobApplication app = new JobApplication();
         app.setApplicationId(appId);
-
         seeker.getAppliedJobs().add(app);
+        user.setJobSeeker(seeker);
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
-        when(applicationRepo.findById(appId)).thenReturn(Optional.of(app));
+        when(applicationRepo.findByApplicationIdAndJobSeekerProfileId(appId,seeker.getProfileId())).thenReturn(Optional.of(app));
 
         ResponseEntity<String> response = applicationService.cancelApplication(appId);
 
@@ -234,9 +238,11 @@ class ApplicationServiceTest {
 
         Users user = createUser();
         JobSeeker seeker = createJobSeeker();
+        user.setJobSeeker(seeker);
 
         when(authenticationService.getLoggedInUser()).thenReturn(user);
         when(jobSeekerProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(seeker));
+        when(applicationRepo.findByApplicationIdAndJobSeekerProfileId(appId,seeker.getProfileId())).thenReturn(Optional.empty());
 
         ResponseEntity<String> response = applicationService.cancelApplication(appId);
 
@@ -247,13 +253,17 @@ class ApplicationServiceTest {
     void shortlistApplication_ShouldUpdateStatusAndSendMail() {
 
         UUID appId = UUID.randomUUID();
-
+        Users user = createUser();
+        Recruiter recruiter=new Recruiter();
         JobSeeker seeker = createJobSeeker();
+        user.setRecruiter(recruiter);
 
         JobApplication application = new JobApplication();
         application.setJobSeeker(seeker);
 
-        when(applicationRepo.findById(appId)).thenReturn(Optional.of(application));
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(recruiterProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(recruiter));
+        when(applicationRepo.findByApplicationIdAndJobPostRecruiterProfileId(appId,recruiter.getProfileId())).thenReturn(Optional.of(application));
 
         ResponseEntity<?> response = applicationService.shortlistApplication(appId);
 
@@ -267,13 +277,17 @@ class ApplicationServiceTest {
     void rejectApplication_ShouldUpdateStatusAndSendMail() {
 
         UUID appId = UUID.randomUUID();
-
+        Users user=createUser();
+        Recruiter recruiter=new Recruiter();
+        user.setRecruiter(recruiter);
         JobSeeker seeker = createJobSeeker();
 
         JobApplication application = new JobApplication();
         application.setJobSeeker(seeker);
 
-        when(applicationRepo.findById(appId)).thenReturn(Optional.of(application));
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(recruiterProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(recruiter));
+        when(applicationRepo.findByApplicationIdAndJobPostRecruiterProfileId(appId,recruiter.getProfileId())).thenReturn(Optional.of(application));
 
         ResponseEntity<?> response = applicationService.rejectApplication(appId);
 
@@ -286,8 +300,14 @@ class ApplicationServiceTest {
     void shortlistApplication_ShouldThrow_WhenApplicationNotFound() {
 
         UUID appId = UUID.randomUUID();
+        Users user = createUser();
+        Recruiter recruiter=new Recruiter();
+        user.setRecruiter(recruiter);
 
-        when(applicationRepo.findById(appId)).thenReturn(Optional.empty());
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(recruiterProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(recruiter));
+        when(applicationRepo.findByApplicationIdAndJobPostRecruiterProfileId(appId,recruiter.getProfileId())).thenReturn(Optional.empty());
+
         assertThrows(ApplicationNotFoundException.class, () -> applicationService.shortlistApplication(appId));
     }
 
@@ -295,8 +315,12 @@ class ApplicationServiceTest {
     void rejectApplication_ShouldThrow_WhenApplicationNotFound() {
 
         UUID appId = UUID.randomUUID();
-
-        when(applicationRepo.findById(appId)).thenReturn(Optional.empty());
+        Users user = createUser();
+        Recruiter recruiter=new Recruiter();
+        user.setRecruiter(recruiter);
+        when(authenticationService.getLoggedInUser()).thenReturn(user);
+        when(recruiterProfileRepo.findByUserUserId(user.getUserId())).thenReturn(Optional.of(recruiter));
+        when(applicationRepo.findByApplicationIdAndJobPostRecruiterProfileId(appId,recruiter.getProfileId())).thenReturn(Optional.empty());
 
         assertThrows(ApplicationNotFoundException.class, () -> applicationService.rejectApplication(appId));
     }

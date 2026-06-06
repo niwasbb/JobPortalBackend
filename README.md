@@ -62,13 +62,13 @@ git clone [https://github.com/niwasbb/JobPortalBackend.git](https://github.com/n
 7. you can check docker container running with name 'jobportal-backend-c'
 
 ## Environment Variables
-MYSQL_URL= MySql database url
-MYSQL_USER= username
-MYSQL_PASSWORD= password
-JWT_SECRET= JWT key
-AWS_BUCKET_NAME= S3 bucket name
-MAIL_USERNAME= email id to send email notification
-MAIL_PASSWORD= app generated password (XXXX XXXX XXXX XXXX)
+- MYSQL_URL= MySql database url
+- MYSQL_USER= username
+- MYSQL_PASSWORD= password
+- JWT_SECRET= JWT key
+- AWS_BUCKET_NAME= S3 bucket name
+- MAIL_USERNAME= email id to send email notification
+- MAIL_PASSWORD= app generated password (XXXX XXXX XXXX XXXX)
 
 ## Future Improvements
 - Email Notifications as seperate microservice

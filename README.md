@@ -72,8 +72,9 @@ git clone [https://github.com/niwasbb/JobPortalBackend.git](https://github.com/n
 
 ## Future Improvements
 - Email Notifications as seperate microservice
-- Elasticsearch Search
 - Microservices Architecture
+- chaching using Redis
+  
 
 ## Author
 Niwas Bondar

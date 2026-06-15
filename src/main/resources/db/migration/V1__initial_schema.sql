@@ -63,7 +63,7 @@ CREATE TABLE job_seeker_experience (job_seeker_user_id BINARY(16) NOT NULL,
 );
 
 CREATE TABLE job_post (job_id BINARY(16) PRIMARY KEY,
-                          posted_date DATETIME,
+                          posted_date TIMESTAMP,
                           title VARCHAR(255) NOT NULL,
                           job_description TEXT,
                           company_name VARCHAR(255) NOT NULL,

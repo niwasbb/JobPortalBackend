@@ -34,10 +34,10 @@ public class JobPostResponse {
     private List<String> requiredSkills;
 
     @NotBlank
-    private List<String> requiredEducation;
+    private String requiredEducation;
 
     @NotBlank
-    private List<String> requiredExperience;
+    private String requiredExperience;
 
     private int noOfVacancy;
 

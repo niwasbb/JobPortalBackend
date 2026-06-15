@@ -4,7 +4,6 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.context.ApplicationContext;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -18,11 +17,11 @@ import java.io.IOException;
 public class JWTFilter extends OncePerRequestFilter {
 
     private final JWTService jwtService;
-    private final ApplicationContext context;
+    private final MyUserDetailsService myUserDetailsService;
 
-    JWTFilter(JWTService jwtService,ApplicationContext applicationContext){
+    JWTFilter(JWTService jwtService,MyUserDetailsService myUserDetailsService){
         this.jwtService=jwtService;
-        this.context=applicationContext;
+        this.myUserDetailsService=myUserDetailsService;
     }
 
     @Override
@@ -54,7 +53,7 @@ public class JWTFilter extends OncePerRequestFilter {
         }
 
         if(username!=null && SecurityContextHolder.getContext().getAuthentication()==null){
-            UserDetails userDetails=context.getBean(MyUserDetailsService.class).loadUserByUsername(username);
+            UserDetails userDetails=myUserDetailsService.loadUserByUsername(username);
 
                if(jwtService.validateToken(token,userDetails)) {
                    UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(userDetails, null, userDetails.getAuthorities());

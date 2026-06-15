@@ -26,6 +26,7 @@ public class JobPost {
     @NotBlank
     private String title;
 
+    @Column(columnDefinition = "TEXT")
     private String jobDescription;
 
     @NotBlank
@@ -37,17 +38,15 @@ public class JobPost {
     @ElementCollection
     private List<String> requiredSkills;
 
-    @ElementCollection
-    private List<String> requiredEducation;
+    private String requiredEducation;
 
-    @ElementCollection
-    private List<String> requiredExperience;
+    private String requiredExperience;
 
-    private int noOfVacancy=1;
+    private int noOfVacancy;
 
     private String salaryRange;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "Recruiter_id",nullable = false)
     private Recruiter recruiter;
 

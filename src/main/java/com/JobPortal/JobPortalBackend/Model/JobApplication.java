@@ -16,11 +16,11 @@ public class JobApplication {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID applicationId;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "Job_Post_id", nullable = false)
     private JobPost jobPost;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne
     @JoinColumn(name = "Applicant_id", nullable = false)
     private JobSeeker jobSeeker;
 

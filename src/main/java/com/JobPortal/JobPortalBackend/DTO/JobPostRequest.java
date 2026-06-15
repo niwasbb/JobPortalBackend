@@ -25,9 +25,9 @@ public class JobPostRequest {
 
     private List<String> requiredSkills;
 
-    private List<String> requiredEducation;
+    private String requiredEducation;
 
-    private List<String> requiredExperience;
+    private String requiredExperience;
 
     private int noOfVacancy;
 

@@ -20,7 +20,7 @@ public class JobSeeker {
 
     @OneToOne
     @MapsId
-    @JoinColumn(name = "User_id", nullable = false, unique = true)
+    @JoinColumn(name = "user_id", nullable = false, unique = true)
     private Users user;
 
     private String firstName;

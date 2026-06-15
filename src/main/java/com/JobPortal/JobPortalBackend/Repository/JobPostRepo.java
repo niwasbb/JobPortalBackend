@@ -18,13 +18,12 @@ public interface JobPostRepo extends JpaRepository<JobPost, UUID> {
                 SELECT DISTINCT j
                 FROM JobPost j
                 LEFT JOIN j.requiredSkills skill
-                LEFT JOIN j.requiredEducation education
-                WHERE LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                WHERE LOWER(j.requiredEducation) LIKE LOWER(CONCAT('%', :keyword, '%'))
+                   OR LOWER(j.title) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(j.jobDescription) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(j.companyName) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(j.location) LIKE LOWER(CONCAT('%', :keyword, '%'))
                    OR LOWER(skill) LIKE LOWER(CONCAT('%', :keyword, '%'))
-                   OR LOWER(education) LIKE LOWER(CONCAT('%', :keyword, '%'))
                 """)
     Page<JobPost> searchByKeyword(@Param("keyword") String keyword, Pageable pageable);
 

@@ -2,10 +2,12 @@ package com.JobPortal.JobPortalBackend.Config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
+@Profile("default")
 public class S3ClientConfig {
 
     @Bean
@@ -18,3 +20,4 @@ public class S3ClientConfig {
     }
 
 }
+
